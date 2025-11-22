@@ -69,7 +69,8 @@ export const messages = {
       class: '分类管理',
       tag: '标签管理',
       llm: 'LLMs 管理',
-      usage: '用量管理'
+      usage: '用量管理',
+      user: '用户管理'
     },
     promptManagement: {
       headerTitle: 'Prompt 管理',
@@ -308,6 +309,47 @@ export const messages = {
         versionRequired: '请输入版本标签',
         createPromptVersionSuccess: '已创建新的 Prompt 版本',
         savePromptFailed: '保存 Prompt 失败'
+      }
+    },
+    userManagement: {
+      headerTitle: '用户管理',
+      headerDescription: '查看系统用户并管理角色与禁用状态，仅管理员可见。',
+      searchPlaceholder: '按用户名搜索',
+      searchButton: '搜索',
+      createButton: '新建用户',
+      createDialogTitle: '新建用户',
+      createConfirm: '创建',
+      form: {
+        username: '用户名',
+        usernamePlaceholder: '请输入用户名',
+        password: '密码',
+        passwordPlaceholder: '请输入密码（至少 6 位）',
+        confirmPassword: '确认密码',
+        confirmPasswordPlaceholder: '请再次输入密码'
+      },
+      noPermissionTitle: '没有访问权限',
+      noPermissionSubtitle: '仅管理员可以访问用户管理页面。',
+      backToHome: '返回首页',
+      columns: {
+        id: 'ID',
+        username: '用户名',
+        role: '角色',
+        active: '启用',
+        admin: '管理员',
+        createdAt: '创建时间',
+        updatedAt: '更新时间'
+      },
+      roles: {
+        admin: '管理员',
+        user: '普通用户'
+      },
+      messages: {
+        loadFailed: '加载用户列表失败，请稍后重试',
+        updateSuccess: '用户信息已更新',
+        usernameRequired: '请输入用户名',
+        passwordInvalid: '请输入至少 6 位的密码',
+        confirmPasswordMismatch: '两次输入的密码不一致',
+        createSuccess: '新用户创建成功'
       }
     },
     testJobManagement: {
@@ -1178,7 +1220,8 @@ export const messages = {
       class: 'Class Management',
       tag: 'Tag Management',
       llm: 'LLM Management',
-      usage: 'Usage Management'
+      usage: 'Usage Management',
+      user: 'User Management'
     },
     promptManagement: {
       headerTitle: 'Prompt Management',
@@ -1417,6 +1460,47 @@ export const messages = {
         versionRequired: 'Enter a version tag.',
         createPromptVersionSuccess: 'New prompt version created.',
         savePromptFailed: 'Failed to save prompt.'
+      }
+    },
+    userManagement: {
+      headerTitle: 'User Management',
+      headerDescription: 'View system users and manage roles and active status. Admin only.',
+      searchPlaceholder: 'Search by username',
+      searchButton: 'Search',
+      createButton: 'New User',
+      createDialogTitle: 'New User',
+      createConfirm: 'Create',
+      form: {
+        username: 'Username',
+        usernamePlaceholder: 'Enter username',
+        password: 'Password',
+        passwordPlaceholder: 'Enter password (min 6 characters)',
+        confirmPassword: 'Confirm Password',
+        confirmPasswordPlaceholder: 'Re-enter password'
+      },
+      noPermissionTitle: 'Access denied',
+      noPermissionSubtitle: 'Only administrators can access the user management page.',
+      backToHome: 'Back to Home',
+      columns: {
+        id: 'ID',
+        username: 'Username',
+        role: 'Role',
+        active: 'Active',
+        admin: 'Admin',
+        createdAt: 'Created At',
+        updatedAt: 'Updated At'
+      },
+      roles: {
+        admin: 'Admin',
+        user: 'User'
+      },
+      messages: {
+        loadFailed: 'Failed to load users. Please try again later.',
+        updateSuccess: 'User updated successfully.',
+        usernameRequired: 'Please enter a username.',
+        passwordInvalid: 'Please enter a password of at least 6 characters.',
+        confirmPasswordMismatch: 'The two passwords do not match.',
+        createSuccess: 'User created successfully.'
       }
     },
     testJobManagement: {

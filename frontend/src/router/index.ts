@@ -101,6 +101,12 @@ const router = createRouter({
       meta: { menu: 'usage', title: '用量管理' }
     },
     {
+      path: '/users',
+      name: 'user-management',
+      component: () => import('../views/UserManagementView.vue'),
+      meta: { menu: 'user', title: '用户管理' }
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/AuthView.vue'),

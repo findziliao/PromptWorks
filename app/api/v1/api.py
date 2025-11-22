@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     usage,
     prompt_test_tasks,
     settings,
+    users,
 )
 
 
@@ -31,3 +32,4 @@ api_router.include_router(
 api_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 api_router.include_router(prompt_test_tasks.router)
 api_router.include_router(settings.router)
+api_router.include_router(users.router, prefix="/users", tags=["users"])

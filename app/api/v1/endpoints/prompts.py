@@ -163,15 +163,15 @@ def list_prompts(
     offset: int = Query(default=0, ge=0),
 ) -> Sequence[Prompt]:
     """按更新时间倒序分页列出 Prompt。"""
-
     stmt = _prompt_query()
 
-    visible_prompt_ids = select(PromptCollaborator.prompt_id).where(
-        PromptCollaborator.user_id == current_user.id
-    )
-    stmt = stmt.where(
-        (Prompt.owner_id == current_user.id) | (Prompt.id.in_(visible_prompt_ids))
-    )
+    if not current_user.is_superuser:
+        visible_prompt_ids = select(PromptCollaborator.prompt_id).where(
+            PromptCollaborator.user_id == current_user.id
+        )
+        stmt = stmt.where(
+            (Prompt.owner_id == current_user.id) | (Prompt.id.in_(visible_prompt_ids))
+        )
 
     if q:
         like_term = f"%{q}%"

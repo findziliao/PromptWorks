@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import (
     create_access_token,
+    get_current_active_superuser,
     get_current_user,
     get_password_hash,
     verify_password,
@@ -24,9 +25,14 @@ router = APIRouter()
     "/signup",
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
-    summary="注册新用户",
+    summary="注册新用户（仅管理员）",
 )
-def signup(*, db: Session = Depends(get_db), payload: UserCreate) -> User:
+def signup(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_superuser),  # noqa: ARG001
+    payload: UserCreate,
+) -> User:
     existing = db.scalar(select(User).where(User.username == payload.username))
     if existing:
         raise HTTPException(

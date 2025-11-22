@@ -31,4 +31,12 @@ class UserRead(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-__all__ = ["UserBase", "UserCreate", "UserRead"]
+class UserAdminUpdate(BaseModel):
+    """管理员更新系统用户信息的入参。"""
+
+    password: str | None = Field(default=None, min_length=6, max_length=128)
+    is_active: bool | None = None
+    is_superuser: bool | None = None
+
+
+__all__ = ["UserBase", "UserCreate", "UserRead", "UserAdminUpdate"]

@@ -140,7 +140,8 @@ import {
   Cpu,
   Histogram,
   Sunny,
-  Moon
+  Moon,
+  User
 } from '@element-plus/icons-vue'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import enUs from 'element-plus/es/locale/lang/en'
@@ -263,15 +264,28 @@ function syncSettingsFormFromRefs() {
     testTaskTimeout.value ?? DEFAULT_TIMEOUT_SECONDS
 }
 
-const menuItems = computed<MenuItem[]>(() => [
-  { index: 'prompt', label: t('menu.prompt'), routeName: 'prompt-management', icon: Collection },
-  { index: 'quick-test', label: t('menu.quickTest'), routeName: 'quick-test', icon: MagicStick },
-  { index: 'test-job', label: t('menu.testJob'), routeName: 'test-job-management', icon: Memo },
-  { index: 'class', label: t('menu.class'), routeName: 'class-management', icon: Files },
-  { index: 'tag', label: t('menu.tag'), routeName: 'tag-management', icon: Tickets },
-  { index: 'llm', label: t('menu.llm'), routeName: 'llm-management', icon: Cpu },
-  { index: 'usage', label: t('menu.usage'), routeName: 'usage-management', icon: Histogram }
-])
+const menuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [
+    { index: 'prompt', label: t('menu.prompt'), routeName: 'prompt-management', icon: Collection },
+    { index: 'quick-test', label: t('menu.quickTest'), routeName: 'quick-test', icon: MagicStick },
+    { index: 'test-job', label: t('menu.testJob'), routeName: 'test-job-management', icon: Memo },
+    { index: 'class', label: t('menu.class'), routeName: 'class-management', icon: Files },
+    { index: 'tag', label: t('menu.tag'), routeName: 'tag-management', icon: Tickets },
+    { index: 'llm', label: t('menu.llm'), routeName: 'llm-management', icon: Cpu },
+    { index: 'usage', label: t('menu.usage'), routeName: 'usage-management', icon: Histogram }
+  ]
+
+  if (currentUser.value?.is_superuser) {
+    items.push({
+      index: 'user',
+      label: t('menu.user'),
+      routeName: 'user-management',
+      icon: User
+    })
+  }
+
+  return items
+})
 
 const activeMenu = computed(() => (route.meta.menu as string | undefined) ?? 'prompt')
 
