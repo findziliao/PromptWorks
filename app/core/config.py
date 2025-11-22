@@ -17,6 +17,8 @@ class Settings(BaseSettings):
         "mysql+pymysql://promptworks:promptworks@localhost:3306/promptworks"
     )
     REDIS_URL: str = "redis://localhost:6379/0"
+    SECRET_KEY: str = "CHANGE_ME_IN_PRODUCTION"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     OPENAI_API_KEY: str | None = None
     OPENAI_BASE_URL: str | None = None
     ANTHROPIC_API_KEY: str | None = None

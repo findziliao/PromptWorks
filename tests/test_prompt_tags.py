@@ -1,4 +1,19 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.core.security import create_access_token, get_password_hash
+from app.models.user import User
+
+
+def _auth_headers(db_session: Session, username: str = "tag-tester") -> dict[str, str]:
+    user = db_session.query(User).filter_by(username=username).first()
+    if user is None:
+        user = User(username=username, hashed_password=get_password_hash("test-pass"))
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+    token = create_access_token({"sub": str(user.id)})
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_list_prompt_tags_returns_empty(client: TestClient) -> None:
@@ -45,7 +60,9 @@ def test_duplicate_tag_creation_returns_400(client: TestClient) -> None:
     assert second.status_code == 400
 
 
-def test_delete_tag_blocked_when_in_use(client: TestClient) -> None:
+def test_delete_tag_blocked_when_in_use(
+    client: TestClient, db_session: Session
+) -> None:
     """有 Prompt 使用的标签在删除时应返回 409。"""
 
     tag_resp = client.post(
@@ -62,7 +79,9 @@ def test_delete_tag_blocked_when_in_use(client: TestClient) -> None:
         "class_name": "客服场景",
         "tag_ids": [tag_id],
     }
-    prompt_resp = client.post("/api/v1/prompts/", json=prompt_payload)
+    headers = _auth_headers(db_session)
+
+    prompt_resp = client.post("/api/v1/prompts/", headers=headers, json=prompt_payload)
     assert prompt_resp.status_code == 201
 
     delete_resp = client.delete(f"/api/v1/prompt-tags/{tag_id}")

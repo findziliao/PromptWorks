@@ -139,7 +139,12 @@ def upgrade() -> None:
     )
 
     op.drop_constraint("test_runs_prompt_id_fkey", "test_runs", type_="foreignkey")
-    op.alter_column("test_runs", "prompt_id", new_column_name="prompt_version_id", existing_type=sa.Integer())
+    op.alter_column(
+        "test_runs",
+        "prompt_id",
+        new_column_name="prompt_version_id",
+        existing_type=sa.Integer(),
+    )
 
     connection.execute(
         sa.text(

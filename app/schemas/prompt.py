@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -177,11 +178,33 @@ class PromptUpdate(BaseModel):
 
 class PromptRead(PromptBase):
     id: int
+    owner_id: int | None = None
     prompt_class: PromptClassRead
     current_version: PromptVersionRead | None = None
     versions: list[PromptVersionRead] = Field(default_factory=list)
     tags: list[PromptTagRead] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PromptShareRequest(BaseModel):
+    """请求将 Prompt 分享给其他用户。"""
+
+    username: str = Field(..., max_length=50)
+    role: Literal["viewer", "editor"] = Field(
+        ..., description="共享角色：viewer 仅可查看，editor 可编辑"
+    )
+
+
+class PromptCollaboratorRead(BaseModel):
+    """Prompt 协作者信息出参。"""
+
+    id: int
+    user_id: int
+    username: str
+    role: Literal["viewer", "editor"]
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

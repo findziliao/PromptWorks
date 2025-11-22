@@ -22,6 +22,29 @@
               active-color="#303133"
               inactive-color="#409EFF"
             />
+            <div class="header-user">
+              <span v-if="isAuthenticated" class="user-name">
+                {{ currentUser?.username }}
+              </span>
+              <el-button
+                v-if="isAuthenticated"
+                type="primary"
+                text
+                size="small"
+                @click="handleLogout"
+              >
+                {{ t('auth.actions.logout') }}
+              </el-button>
+              <el-button
+                v-else
+                type="primary"
+                text
+                size="small"
+                @click="handleGoLogin"
+              >
+                {{ t('auth.actions.login') }}
+              </el-button>
+            </div>
           </div>
         </el-header>
         <el-container>
@@ -104,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -127,6 +150,7 @@ import type { SupportedLocale } from './i18n/messages'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useTestingSettings, DEFAULT_TIMEOUT_SECONDS } from './composables/useTestingSettings'
+import { useAuth } from './composables/useAuth'
 
 interface MenuItem {
   index: string
@@ -150,6 +174,8 @@ const {
   fetchTimeouts,
   saveTimeouts
 } = useTestingSettings()
+
+const { currentUser, isAuthenticated, loadUser, logout } = useAuth()
 
 const settingsDialogVisible = ref(false)
 const settingsLoading = ref(false)
@@ -253,6 +279,10 @@ watch(language, (value) => {
   setLocale(value)
 })
 
+onMounted(() => {
+  void loadUser()
+})
+
 watch(isDark, (value) => toggleTheme(value), { immediate: true })
 
 watch(
@@ -345,6 +375,15 @@ function handleMenuSelect(index: string) {
     router.push({ name: target.routeName })
   }
 }
+
+async function handleLogout() {
+  await logout()
+  router.push({ name: 'login' })
+}
+
+function handleGoLogin() {
+  router.push({ name: 'login' })
+}
 </script>
 
 <style scoped>
@@ -382,6 +421,16 @@ function handleMenuSelect(index: string) {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name {
+  font-size: 14px;
 }
 
 .language-select {

@@ -31,6 +31,37 @@ export const messages = {
       settingsNeverUpdated: '尚未设置超时时间',
       settingsLastUpdated: '上次更新时间：{time}'
     },
+    auth: {
+      title: '账号登录',
+      subtitle: '使用用户名和密码登录 PromptWorks',
+      tabs: {
+        login: '登录',
+        signup: '注册'
+      },
+      fields: {
+        username: '用户名',
+        password: '密码',
+        confirmPassword: '确认密码'
+      },
+      placeholders: {
+        username: '请输入用户名',
+        password: '请输入密码',
+        confirmPassword: '请再次输入密码'
+      },
+      actions: {
+        login: '登录',
+        signup: '注册',
+        logout: '退出登录'
+      },
+      validation: {
+        usernameRequired: '请输入用户名',
+        usernameLength: '用户名长度需在 3~50 个字符之间',
+        passwordRequired: '请输入密码',
+        passwordLength: '密码长度需在 6~128 个字符之间',
+        confirmPasswordRequired: '请再次输入密码',
+        confirmPasswordMismatch: '两次输入的密码不一致'
+      }
+    },
     menu: {
       prompt: 'Prompt 管理',
       quickTest: '快速测试',
@@ -605,6 +636,38 @@ export const messages = {
         },
         viewResult: '查看结果'
       },
+      share: {
+        title: '协作者',
+        addButton: '添加协作者',
+        empty: '当前没有协作者，可通过用户名分享',
+        revoke: '取消共享',
+        dialogTitle: '分享给其他用户',
+        dialogConfirm: '确认分享',
+        fields: {
+          username: '用户名',
+          role: '权限'
+        },
+        placeholders: {
+          username: '请输入要分享给的用户名'
+        },
+        columns: {
+          username: '用户名',
+          role: '权限',
+          createdAt: '添加时间',
+          actions: '操作'
+        },
+        roles: {
+          viewer: '只读',
+          editor: '可编辑'
+        },
+        validation: {
+          usernameRequired: '请输入要分享给的用户名'
+        },
+        confirmRevoke: '确定取消用户「{name}」的访问权限吗？',
+        shareSuccess: '已更新协作者权限',
+        revokeSuccess: '已移除协作者「{name}」',
+        loadFailed: '加载协作者列表失败'
+      },
       messages: {
         classRequired: '请选择分类',
         noChange: '分类与标签未发生变化',
@@ -1076,6 +1139,37 @@ export const messages = {
       settingsSecondsUnit: 's',
       settingsNeverUpdated: 'Timeout not configured yet',
       settingsLastUpdated: 'Last updated at: {time}'
+    },
+    auth: {
+      title: 'Sign in',
+      subtitle: 'Use your username and password to access PromptWorks.',
+      tabs: {
+        login: 'Login',
+        signup: 'Sign Up'
+      },
+      fields: {
+        username: 'Username',
+        password: 'Password',
+        confirmPassword: 'Confirm Password'
+      },
+      placeholders: {
+        username: 'Enter username',
+        password: 'Enter password',
+        confirmPassword: 'Re-enter password'
+      },
+      actions: {
+        login: 'Login',
+        signup: 'Sign Up',
+        logout: 'Logout'
+      },
+      validation: {
+        usernameRequired: 'Please enter a username.',
+        usernameLength: 'Username must be between 3 and 50 characters.',
+        passwordRequired: 'Please enter a password.',
+        passwordLength: 'Password must be between 6 and 128 characters.',
+        confirmPasswordRequired: 'Please confirm your password.',
+        confirmPasswordMismatch: 'The two passwords do not match.'
+      }
     },
     menu: {
       prompt: 'Prompt Management',
@@ -1650,6 +1744,38 @@ export const messages = {
           actions: 'Actions'
         },
         viewResult: 'View Result'
+      },
+      share: {
+        title: 'Collaborators',
+        addButton: 'Add collaborator',
+        empty: 'No collaborators yet. Share by username.',
+        revoke: 'Revoke access',
+        dialogTitle: 'Share with another user',
+        dialogConfirm: 'Confirm',
+        fields: {
+          username: 'Username',
+          role: 'Permission'
+        },
+        placeholders: {
+          username: 'Enter the username to share with'
+        },
+        columns: {
+          username: 'Username',
+          role: 'Permission',
+          createdAt: 'Added At',
+          actions: 'Actions'
+        },
+        roles: {
+          viewer: 'Viewer',
+          editor: 'Editor'
+        },
+        validation: {
+          usernameRequired: 'Please enter the target username.'
+        },
+        confirmRevoke: 'Revoke access for “{name}”?',
+        shareSuccess: 'Collaborator permissions updated.',
+        revokeSuccess: 'Access revoked for “{name}”.',
+        loadFailed: 'Failed to load collaborators.'
       },
       messages: {
         classRequired: 'Select a category first.',

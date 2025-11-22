@@ -126,6 +126,103 @@
           </el-button>
         </template>
       </el-dialog>
+      <div v-if="canManageSharing" class="info-share">
+        <div class="info-share__header">
+          <span class="info-share__title">{{ t('promptDetail.share.title') }}</span>
+          <el-button type="primary" text size="small" @click="openShareDialog">
+            {{ t('promptDetail.share.addButton') }}
+          </el-button>
+        </div>
+        <el-alert
+          v-if="shareError"
+          :title="shareError"
+          type="warning"
+          show-icon
+          class="share-alert"
+        />
+        <el-table
+          v-else-if="collaborators.length"
+          :data="collaborators"
+          size="small"
+          border
+          class="share-table"
+          v-loading="collaboratorsLoading"
+        >
+          <el-table-column :label="t('promptDetail.share.columns.username')" prop="username" />
+          <el-table-column :label="t('promptDetail.share.columns.role')" prop="role">
+            <template #default="{ row }">
+              <el-tag :type="row.role === 'editor' ? 'success' : 'info'" size="small">
+                {{
+                  row.role === 'editor'
+                    ? t('promptDetail.share.roles.editor')
+                    : t('promptDetail.share.roles.viewer')
+                }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptDetail.share.columns.createdAt')" prop="created_at">
+            <template #default="{ row }">
+              {{ formatDateTime(row.created_at) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptDetail.share.columns.actions')" width="140">
+            <template #default="{ row }">
+              <el-popconfirm
+                :title="t('promptDetail.share.confirmRevoke', { name: row.username })"
+                :confirm-button-text="t('common.delete')"
+                :cancel-button-text="t('common.cancel')"
+                icon=""
+                @confirm="() => handleRevokeCollaborator(row)"
+              >
+                <template #reference>
+                  <el-button
+                    type="danger"
+                    text
+                    size="small"
+                    :loading="revokeLoadingId === row.user_id"
+                  >
+                    {{ t('promptDetail.share.revoke') }}
+                  </el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-else :description="t('promptDetail.share.empty')" />
+      </div>
+
+      <el-dialog
+        v-model="shareDialogVisible"
+        :title="t('promptDetail.share.dialogTitle')"
+        width="480px"
+      >
+        <el-form :model="shareForm" label-width="100px" class="share-form">
+          <el-form-item :label="t('promptDetail.share.fields.username')">
+            <el-input
+              v-model="shareForm.username"
+              :placeholder="t('promptDetail.share.placeholders.username')"
+            />
+          </el-form-item>
+          <el-form-item :label="t('promptDetail.share.fields.role')">
+            <el-radio-group v-model="shareForm.role">
+              <el-radio-button label="viewer">
+                {{ t('promptDetail.share.roles.viewer') }}
+              </el-radio-button>
+              <el-radio-button label="editor">
+                {{ t('promptDetail.share.roles.editor') }}
+              </el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="shareDialogVisible = false" :disabled="shareLoading">
+            {{ t('common.cancel') }}
+          </el-button>
+          <el-button type="primary" :loading="shareLoading" @click="handleShare">
+            {{ t('promptDetail.share.dialogConfirm') }}
+          </el-button>
+        </template>
+      </el-dialog>
       </el-card>
 
       <el-card class="content-card">
@@ -270,23 +367,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { DocumentCopy } from '@element-plus/icons-vue'
 import { usePromptDetail } from '../composables/usePromptDetail'
 import { listPromptClasses, type PromptClassStats } from '../api/promptClass'
 import { listPromptTags, type PromptTagStats } from '../api/promptTag'
-import { updatePrompt } from '../api/prompt'
+import {
+  listPromptCollaborators,
+  revokePromptShare,
+  sharePrompt,
+  updatePrompt
+} from '../api/prompt'
 import { listTestRuns } from '../api/testRun'
 import { listPromptTestTasks } from '../api/promptTest'
 import type { TestRun } from '../types/testRun'
 import type { PromptTestTask } from '../types/promptTest'
+import type { PromptCollaborator, PromptCollaboratorRole } from '../types/prompt'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
 const { t, locale } = useI18n()
+const { currentUser } = useAuth()
 const currentId = computed(() => {
   const raw = Number(route.params.id)
   return Number.isFinite(raw) && raw > 0 ? raw : null
@@ -309,6 +414,21 @@ const selectedClassId = ref<number | null>(null)
 const selectedTagIds = ref<number[]>([])
 const metaDialogVisible = ref(false)
 
+const collaborators = ref<PromptCollaborator[]>([])
+const shareError = ref<string | null>(null)
+const collaboratorsLoading = ref(false)
+const shareDialogVisible = ref(false)
+const shareLoading = ref(false)
+const revokeLoadingId = ref<number | null>(null)
+
+const shareForm = reactive<{
+  username: string
+  role: PromptCollaboratorRole
+}>({
+  username: '',
+  role: 'viewer'
+})
+
 const classOptions = computed(() =>
   promptClasses.value
     .map((item) => ({ id: item.id, name: item.name }))
@@ -321,6 +441,21 @@ const tagOptions = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name, locale.value))
 )
 
+const canManageSharing = computed(() => {
+  const prompt = detail.value
+  const user = currentUser.value
+  if (!prompt || !user) {
+    return false
+  }
+  if (user.is_superuser) {
+    return true
+  }
+  if (prompt.owner_id != null && prompt.owner_id === user.id) {
+    return true
+  }
+  return false
+})
+
 watch(
   () => detail.value,
   (value) => {
@@ -328,11 +463,13 @@ watch(
       selectedVersionId.value = null
       selectedClassId.value = null
       selectedTagIds.value = []
+      void fetchCollaborators()
       return
     }
     selectedVersionId.value = value.current_version?.id ?? value.versions[0]?.id ?? null
     selectedClassId.value = value.prompt_class.id
     selectedTagIds.value = value.tags.map((tag) => tag.id)
+    void fetchCollaborators()
   },
   { immediate: true }
 )
@@ -442,7 +579,15 @@ watch(tagOptions, (options) => {
 
 onMounted(() => {
   void fetchMeta()
+  void fetchCollaborators()
 })
+
+watch(
+  () => currentUser.value,
+  () => {
+    void fetchCollaborators()
+  }
+)
 
 const statusTagType = {
   completed: 'success',
@@ -519,6 +664,22 @@ function extractMetaError(error: unknown): string {
   return t('promptDetail.messages.metaLoadFailed')
 }
 
+function extractShareError(error: unknown): string {
+  if (error && typeof error === 'object' && 'payload' in error) {
+    const payload = (error as { payload?: unknown }).payload
+    if (payload && typeof payload === 'object' && 'detail' in payload) {
+      const detail = (payload as Record<string, unknown>).detail
+      if (typeof detail === 'string' && detail.trim()) {
+        return detail
+      }
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return t('promptDetail.share.loadFailed')
+}
+
 async function fetchMeta() {
   isMetaLoading.value = true
   metaError.value = null
@@ -533,6 +694,28 @@ async function fetchMeta() {
     metaError.value = extractMetaError(error)
   } finally {
     isMetaLoading.value = false
+  }
+}
+
+async function fetchCollaborators() {
+  const promptId = currentId.value
+  const prompt = detail.value
+
+  if (!promptId || !prompt || !canManageSharing.value) {
+    collaborators.value = []
+    shareError.value = null
+    return
+  }
+
+  collaboratorsLoading.value = true
+  shareError.value = null
+  try {
+    const items = await listPromptCollaborators(promptId)
+    collaborators.value = items
+  } catch (error) {
+    shareError.value = extractShareError(error)
+  } finally {
+    collaboratorsLoading.value = false
   }
 }
 
@@ -558,6 +741,60 @@ async function fetchTestRecords() {
     promptTestTasks.value = []
   } finally {
     testRunLoading.value = false
+  }
+}
+
+async function handleShare() {
+  if (shareLoading.value) {
+    return
+  }
+  const promptId = currentId.value
+  if (!promptId || !canManageSharing.value) {
+    return
+  }
+
+  const username = shareForm.username.trim()
+  if (!username) {
+    ElMessage.warning(t('promptDetail.share.validation.usernameRequired'))
+    return
+  }
+
+  shareLoading.value = true
+  try {
+    await sharePrompt(promptId, {
+      username,
+      role: shareForm.role
+    })
+    ElMessage.success(t('promptDetail.share.shareSuccess'))
+    shareDialogVisible.value = false
+    await fetchCollaborators()
+  } catch (error) {
+    const message = extractShareError(error)
+    ElMessage.error(message)
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+async function handleRevokeCollaborator(target: PromptCollaborator) {
+  if (revokeLoadingId.value !== null) {
+    return
+  }
+  const promptId = currentId.value
+  if (!promptId || !canManageSharing.value) {
+    return
+  }
+
+  revokeLoadingId.value = target.user_id
+  try {
+    await revokePromptShare(promptId, target.user_id)
+    ElMessage.success(t('promptDetail.share.revokeSuccess', { name: target.username }))
+    collaborators.value = collaborators.value.filter((item) => item.user_id !== target.user_id)
+  } catch (error) {
+    const message = extractShareError(error)
+    ElMessage.error(message)
+  } finally {
+    revokeLoadingId.value = null
   }
 }
 
@@ -832,6 +1069,12 @@ function closeMetaDialog() {
   metaDialogVisible.value = false
 }
 
+function openShareDialog() {
+  shareForm.username = ''
+  shareForm.role = 'viewer'
+  shareDialogVisible.value = true
+}
+
 const dateTimeFormatter = computed(
   () =>
     new Intl.DateTimeFormat(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US', {
@@ -1030,6 +1273,36 @@ function goHome() {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.info-share {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-share__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.info-share__title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.share-alert {
+  margin-bottom: 4px;
+}
+
+.share-form {
+  margin-top: 8px;
+}
+
+.share-table :deep(.el-table__cell) {
+  font-size: 13px;
 }
 
 .info-tags :deep(.el-button.is-link) {

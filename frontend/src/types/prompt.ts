@@ -23,11 +23,22 @@ export interface PromptVersion {
   updated_at: string
 }
 
+export type PromptCollaboratorRole = 'viewer' | 'editor'
+
+export interface PromptCollaborator {
+  id: number
+  user_id: number
+  username: string
+  role: PromptCollaboratorRole
+  created_at: string
+}
+
 export interface Prompt {
   id: number
   name: string
   description: string | null
   author: string | null
+   owner_id: number | null
   prompt_class: PromptClass
   current_version: PromptVersion | null
   versions: PromptVersion[]

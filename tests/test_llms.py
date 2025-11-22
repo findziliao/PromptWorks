@@ -7,6 +7,7 @@ import httpx
 import pytest
 from fastapi import HTTPException
 
+from app.core.config import settings
 from app.api.v1.endpoints import llms as llms_api
 from app.api.v1.endpoints.llms import ChatMessage, LLMStreamInvocationRequest
 from app.models.llm_provider import LLMModel, LLMProvider
@@ -37,7 +38,8 @@ def test_list_common_providers(client):
     keys = {item["key"] for item in data}
     assert {"openai", "anthropic"}.issubset(keys)
     openai = next(item for item in data if item["key"] == "openai")
-    assert openai["base_url"] == "https://api.openai.com/v1"
+    expected_base_url = settings.OPENAI_BASE_URL or "https://api.openai.com/v1"
+    assert openai["base_url"] == expected_base_url
 
 
 def test_create_known_provider_without_base_url(client):
@@ -49,7 +51,8 @@ def test_create_known_provider_without_base_url(client):
     provider = create_provider(client, payload)
 
     assert provider["provider_key"] == "openai"
-    assert provider["base_url"] == "https://api.openai.com/v1"
+    expected_base_url = settings.OPENAI_BASE_URL or "https://api.openai.com/v1"
+    assert provider["base_url"] == expected_base_url
     assert provider["is_custom"] is False
     assert provider["masked_api_key"].startswith(payload["api_key"][:4])
     assert provider["masked_api_key"].endswith(payload["api_key"][-2:])
@@ -368,8 +371,8 @@ def test_invoke_llm_uses_known_base_url_when_missing(client, db_session, monkeyp
     }
     response = client.post(f"{API_PREFIX}/{provider.id}/invoke", json=body)
     assert response.status_code == 200
-
-    assert captured["url"] == "https://api.openai.com/v1/chat/completions"
+    expected_base_url = settings.OPENAI_BASE_URL or "https://api.openai.com/v1"
+    assert captured["url"] == f"{expected_base_url.rstrip('/')}/chat/completions"
     assert captured["headers"]["Authorization"] == "Bearer known-key"
     assert captured["json"]["model"] == "gpt-4o"
 

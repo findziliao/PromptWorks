@@ -1,5 +1,5 @@
 import { request, type HttpError } from './http'
-import type { Prompt, PromptVersion } from '../types/prompt'
+import type { Prompt, PromptCollaborator, PromptVersion } from '../types/prompt'
 
 export interface PromptListParams {
   q?: string
@@ -30,6 +30,11 @@ export interface PromptUpdatePayload {
   content?: string | null
   activate_version_id?: number | null
   tag_ids?: number[] | null
+}
+
+export interface PromptSharePayload {
+  username: string
+  role: 'viewer' | 'editor'
 }
 
 export async function listPrompts(params: PromptListParams = {}): Promise<Prompt[]> {
@@ -82,6 +87,26 @@ export async function switchPromptVersion(
   version: PromptVersion
 ): Promise<Prompt> {
   return updatePrompt(promptId, { activate_version_id: version.id })
+}
+
+export async function listPromptCollaborators(promptId: number): Promise<PromptCollaborator[]> {
+  return request<PromptCollaborator[]>(`/prompts/${promptId}/collaborators`)
+}
+
+export async function sharePrompt(
+  promptId: number,
+  payload: PromptSharePayload
+): Promise<PromptCollaborator> {
+  return request<PromptCollaborator>(`/prompts/${promptId}/share`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+}
+
+export async function revokePromptShare(promptId: number, userId: number): Promise<void> {
+  await request<void>(`/prompts/${promptId}/share/${userId}`, {
+    method: 'DELETE'
+  })
 }
 
 export type { HttpError }

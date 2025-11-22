@@ -114,7 +114,12 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["prompt_id"], ["prompts.id"], name="test_runs_prompt_id_fkey", ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["prompt_id"],
+            ["prompts.id"],
+            name="test_runs_prompt_id_fkey",
+            ondelete="CASCADE",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_test_runs_id", "test_runs", ["id"], unique=False)
@@ -125,9 +130,7 @@ def upgrade() -> None:
         sa.Column("test_run_id", sa.Integer(), nullable=False),
         sa.Column("run_index", sa.Integer(), nullable=False),
         sa.Column("output", sa.Text(), nullable=False),
-        sa.Column(
-            "parsed_output", sa.JSON(), nullable=True
-        ),
+        sa.Column("parsed_output", sa.JSON(), nullable=True),
         sa.Column("tokens_used", sa.Integer(), nullable=True),
         sa.Column("latency_ms", sa.Integer(), nullable=True),
         sa.Column(
@@ -147,12 +150,8 @@ def upgrade() -> None:
         sa.Column("result_id", sa.Integer(), nullable=False),
         sa.Column("is_valid_json", sa.Boolean(), nullable=True),
         sa.Column("schema_pass", sa.Boolean(), nullable=True),
-        sa.Column(
-            "missing_fields", sa.JSON(), nullable=True
-        ),
-        sa.Column(
-            "type_mismatches", sa.JSON(), nullable=True
-        ),
+        sa.Column("missing_fields", sa.JSON(), nullable=True),
+        sa.Column("type_mismatches", sa.JSON(), nullable=True),
         sa.Column("consistency_score", sa.Float(), nullable=True),
         sa.Column("numeric_accuracy", sa.Float(), nullable=True),
         sa.Column("boolean_accuracy", sa.Float(), nullable=True),
