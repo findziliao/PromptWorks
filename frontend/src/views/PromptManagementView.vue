@@ -56,6 +56,16 @@
           <el-option :label="t('promptManagement.sortUpdatedAt')" value="updated_at" />
           <el-option :label="t('promptManagement.sortAuthor')" value="author" />
         </el-select>
+        <el-button
+          class="view-toggle"
+          text
+          circle
+          @click="toggleViewMode"
+        >
+          <el-icon>
+            <component :is="viewMode === 'list' ? Grid : Menu" />
+          </el-icon>
+        </el-button>
       </div>
     </div>
 
@@ -70,38 +80,40 @@
     <el-skeleton v-else-if="isLoading" animated :rows="6" />
 
     <template v-else>
-      <div v-if="filteredPrompts.length" class="card-grid">
-        <div v-for="prompt in filteredPrompts" :key="prompt.id" class="card-grid__item">
-          <el-card class="prompt-card" shadow="hover" @click="goDetail(prompt.id)">
-            <div class="prompt-card__header">
-              <div>
-                <p class="prompt-class">{{ prompt.prompt_class.name }}</p>
-                <h3 class="prompt-title">{{ prompt.name }}</h3>
+      <template v-if="filteredPrompts.length">
+        <el-table
+          v-if="viewMode === 'list'"
+          :data="filteredPrompts"
+          border
+          size="small"
+          class="prompt-table"
+          @row-click="handleRowClick"
+        >
+          <el-table-column :label="t('promptManagement.form.title')" min-width="220">
+            <template #default="{ row }">
+              <div class="table-title-cell">
+                <div class="table-title-main">{{ row.name }}</div>
+                <div class="table-title-sub">{{ row.prompt_class?.name }}</div>
               </div>
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptManagement.currentVersion')" width="140">
+            <template #default="{ row }">
               <el-tag type="success" round size="small">
-                {{ t('promptManagement.currentVersion') }}
-                {{ prompt.current_version?.version ?? t('common.notEnabled') }}
+                {{ row.current_version?.version ?? t('common.notEnabled') }}
               </el-tag>
-            </div>
-            <p class="prompt-desc">{{ prompt.description ?? t('common.descriptionNone') }}</p>
-            <div class="prompt-meta">
-              <div class="meta-item">
-                <span class="meta-label">{{ t('promptManagement.author') }}</span>
-                <span>{{ prompt.author ?? t('common.notSet') }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">{{ t('promptManagement.createdAt') }}</span>
-                <span>{{ formatDate(prompt.created_at) }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">{{ t('promptManagement.updatedAt') }}</span>
-                <span>{{ formatDate(prompt.updated_at) }}</span>
-              </div>
-            </div>
-            <div class="prompt-tags">
-              <div class="prompt-tags__list">
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptManagement.author')" width="140">
+            <template #default="{ row }">
+              {{ row.author ?? t('common.notSet') }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptManagement.form.tags')" min-width="200">
+            <template #default="{ row }">
+              <div class="table-tags">
                 <el-tag
-                  v-for="tag in prompt.tags"
+                  v-for="tag in row.tags"
                   :key="tag.id"
                   size="small"
                   effect="dark"
@@ -110,30 +122,116 @@
                   {{ tag.name }}
                 </el-tag>
               </div>
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptManagement.createdAt')" width="180">
+            <template #default="{ row }">
+              {{ formatDate(row.created_at) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptManagement.updatedAt')" width="180">
+            <template #default="{ row }">
+              {{ formatDate(row.updated_at) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptClassManagement.columns.actions')" width="140" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                link
+                type="primary"
+                size="small"
+                @click.stop="goDetail(row.id)"
+              >
+                {{ t('common.view') }}
+              </el-button>
               <el-popconfirm
-                :title="t('promptManagement.confirmDelete', { name: prompt.name })"
+                :title="t('promptManagement.confirmDelete', { name: row.name })"
                 :confirm-button-text="t('promptManagement.delete')"
                 :cancel-button-text="t('promptManagement.cancel')"
                 icon=""
-                @confirm="() => handleDeletePrompt(prompt)"
+                @confirm="() => handleDeletePrompt(row)"
               >
                 <template #reference>
                   <el-button
+                    link
                     type="danger"
-                    text
                     size="small"
-                    class="card-delete"
-                    :loading="isDeleting(prompt.id)"
+                    :loading="isDeleting(row.id)"
                     @click.stop
                   >
-                    <el-icon><Delete /></el-icon>
+                    {{ t('promptManagement.delete') }}
                   </el-button>
                 </template>
               </el-popconfirm>
-            </div>
-          </el-card>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div v-else class="card-grid">
+          <div v-for="prompt in filteredPrompts" :key="prompt.id" class="card-grid__item">
+            <el-card class="prompt-card" shadow="hover" @click="goDetail(prompt.id)">
+              <div class="prompt-card__header">
+                <div>
+                  <p class="prompt-class">{{ prompt.prompt_class.name }}</p>
+                  <h3 class="prompt-title">{{ prompt.name }}</h3>
+                </div>
+                <el-tag type="success" round size="small">
+                  {{ t('promptManagement.currentVersion') }}
+                  {{ prompt.current_version?.version ?? t('common.notEnabled') }}
+                </el-tag>
+              </div>
+              <p class="prompt-desc">{{ prompt.description ?? t('common.descriptionNone') }}</p>
+              <div class="prompt-meta">
+                <div class="meta-item">
+                  <span class="meta-label">{{ t('promptManagement.author') }}</span>
+                  <span>{{ prompt.author ?? t('common.notSet') }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">{{ t('promptManagement.createdAt') }}</span>
+                  <span>{{ formatDate(prompt.created_at) }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">{{ t('promptManagement.updatedAt') }}</span>
+                  <span>{{ formatDate(prompt.updated_at) }}</span>
+                </div>
+              </div>
+              <div class="prompt-tags">
+                <div class="prompt-tags__list">
+                  <el-tag
+                    v-for="tag in prompt.tags"
+                    :key="tag.id"
+                    size="small"
+                    effect="dark"
+                    :style="{ backgroundColor: tag.color, borderColor: tag.color }"
+                  >
+                    {{ tag.name }}
+                  </el-tag>
+                </div>
+                <el-popconfirm
+                  :title="t('promptManagement.confirmDelete', { name: prompt.name })"
+                  :confirm-button-text="t('promptManagement.delete')"
+                  :cancel-button-text="t('promptManagement.cancel')"
+                  icon=""
+                  @confirm="() => handleDeletePrompt(prompt)"
+                >
+                  <template #reference>
+                    <el-button
+                      type="danger"
+                      text
+                      size="small"
+                      class="card-delete"
+                      :loading="isDeleting(prompt.id)"
+                      @click.stop
+                    >
+                      <el-icon><Delete /></el-icon>
+                    </el-button>
+                  </template>
+                </el-popconfirm>
+              </div>
+            </el-card>
+          </div>
         </div>
-      </div>
+      </template>
       <el-empty v-else :description="t('promptManagement.emptyDescription')" />
     </template>
 
@@ -210,7 +308,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { Delete, Plus, Search } from '@element-plus/icons-vue'
+import { Delete, Grid, Menu, Plus, Search } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { listPrompts, createPrompt, deletePrompt, type HttpError } from '../api/prompt'
@@ -247,6 +345,7 @@ const activeClassKey = ref('all')
 const searchKeyword = ref('')
 const selectedTagIds = ref<number[]>([])
 const sortKey = ref<SortKey>('default')
+const viewMode = ref<'list' | 'card'>('list')
 
 const classOptions = computed(() => {
   return promptClasses.value
@@ -369,6 +468,10 @@ function openCreateDialog() {
   createDialogVisible.value = true
 }
 
+function toggleViewMode() {
+  viewMode.value = viewMode.value === 'list' ? 'card' : 'list'
+}
+
 function isDeleting(id: number) {
   return deletingIds.value.includes(id)
 }
@@ -418,6 +521,12 @@ function handleCreatePrompt() {
 
 function goDetail(id: number) {
   router.push({ name: 'prompt-detail', params: { id: String(id) } })
+}
+
+function handleRowClick(row: Prompt) {
+  if (row && typeof row.id === 'number') {
+    goDetail(row.id)
+  }
 }
 
 async function handleDeletePrompt(target: Prompt) {
@@ -591,6 +700,10 @@ onMounted(() => {
   flex: initial;
 }
 
+.view-toggle {
+  flex: initial;
+}
+
 .tag-option {
   display: flex;
   align-items: center;
@@ -609,6 +722,31 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 16px;
   align-items: stretch;
+}
+
+.prompt-table {
+  margin-top: 8px;
+}
+
+.table-title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.table-title-main {
+  font-weight: 600;
+}
+
+.table-title-sub {
+  font-size: 12px;
+  color: var(--text-weak-color);
+}
+
+.table-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .data-alert {
