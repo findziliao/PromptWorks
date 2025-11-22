@@ -60,7 +60,7 @@ def upgrade() -> None:
         sa.Column("capability", sa.String(length=120), nullable=True),
         sa.Column("quota", sa.String(length=120), nullable=True),
         sa.Column(
-            "parameters", sa.JSON(), nullable=False, server_default=sa.text("'{}'")
+            "parameters", sa.JSON(), nullable=False
         ),
         sa.Column(
             "created_at",
@@ -108,7 +108,7 @@ def downgrade() -> None:
             "parameters",
             sa.JSON(),
             nullable=False,
-            server_default=sa.text("'{}'"),
+            server_default=None,
         ),
     )
 

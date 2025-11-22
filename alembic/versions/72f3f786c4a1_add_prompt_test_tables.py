@@ -10,7 +10,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 
 revision: str = "72f3f786c4a1"
@@ -21,27 +20,25 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     bind = op.get_bind()
-    task_status_enum = postgresql.ENUM(
+    task_status_enum = sa.Enum(
         "draft",
         "ready",
         "running",
         "completed",
         "failed",
-        name="prompt_test_task_status",
-        create_type=False,
+        native_enum=False,
     )
-    experiment_status_enum = postgresql.ENUM(
+    experiment_status_enum = sa.Enum(
         "pending",
         "running",
         "completed",
         "failed",
         "cancelled",
-        name="prompt_test_experiment_status",
-        create_type=False,
+        native_enum=False,
     )
 
-    task_status_enum.create(bind, checkfirst=True)
-    experiment_status_enum.create(bind, checkfirst=True)
+    # task_status_enum.create(bind, checkfirst=True)
+    # experiment_status_enum.create(bind, checkfirst=True)
 
     op.create_table(
         "prompt_test_tasks",
@@ -180,5 +177,5 @@ def downgrade() -> None:
     op.drop_table("prompt_test_tasks")
 
     bind = op.get_bind()
-    sa.Enum(name="prompt_test_experiment_status").drop(bind, checkfirst=True)
-    sa.Enum(name="prompt_test_task_status").drop(bind, checkfirst=True)
+    # sa.Enum(name="prompt_test_experiment_status").drop(bind, checkfirst=True)
+    # sa.Enum(name="prompt_test_task_status").drop(bind, checkfirst=True)

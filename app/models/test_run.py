@@ -40,11 +40,7 @@ class TestRun(Base):
     repetitions: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     schema: Mapped[dict | None] = mapped_column(JSONBCompat, nullable=True)
     status: Mapped[TestRunStatus] = mapped_column(
-        PgEnum(
-            TestRunStatus,
-            name="test_run_status",
-            values_callable=lambda enum: [member.value for member in enum],
-        ),
+        String(50),
         nullable=False,
         default=TestRunStatus.PENDING,
         server_default=TestRunStatus.PENDING.value,

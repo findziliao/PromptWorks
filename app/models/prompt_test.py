@@ -49,11 +49,7 @@ class PromptTestTask(Base):
     owner_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     config: Mapped[dict | None] = mapped_column(JSONBCompat, nullable=True)
     status: Mapped[PromptTestTaskStatus] = mapped_column(
-        PgEnum(
-            PromptTestTaskStatus,
-            name="prompt_test_task_status",
-            values_callable=lambda enum: [member.value for member in enum],
-        ),
+        String(50),
         nullable=False,
         default=PromptTestTaskStatus.DRAFT,
         server_default=PromptTestTaskStatus.DRAFT.value,
@@ -153,11 +149,7 @@ class PromptTestExperiment(Base):
     batch_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     status: Mapped[PromptTestExperimentStatus] = mapped_column(
-        PgEnum(
-            PromptTestExperimentStatus,
-            name="prompt_test_experiment_status",
-            values_callable=lambda enum: [member.value for member in enum],
-        ),
+        String(50),
         nullable=False,
         default=PromptTestExperimentStatus.PENDING,
         server_default=PromptTestExperimentStatus.PENDING.value,

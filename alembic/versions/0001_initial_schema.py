@@ -10,7 +10,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -20,39 +19,19 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-test_run_status_enum = postgresql.ENUM(
+test_run_status_enum = sa.Enum(
     "pending",
     "running",
     "completed",
     "failed",
-    name="test_run_status",
-    create_type=False,
+    native_enum=False,
 )
 
 
 def upgrade() -> None:
     """Apply the initial database schema."""
 
-    op.execute(
-        sa.text(
-            """
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM pg_type WHERE typname = 'test_run_status'
-                ) THEN
-                    CREATE TYPE test_run_status AS ENUM (
-                        'pending',
-                        'running',
-                        'completed',
-                        'failed'
-                    );
-                END IF;
-            END
-            $$;
-            """
-        )
-    )
+    # op.execute(...) removed for cross-database compatibility
 
     op.create_table(
         "prompts",
@@ -115,11 +94,11 @@ def upgrade() -> None:
         sa.Column("temperature", sa.Float(), nullable=False),
         sa.Column("top_p", sa.Float(), nullable=False),
         sa.Column("repetitions", sa.Integer(), nullable=False),
-        sa.Column("schema", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("schema", sa.JSON(), nullable=True),
         sa.Column(
             "status",
             test_run_status_enum,
-            server_default=sa.text("'pending'::test_run_status"),
+            server_default="pending",
             nullable=False,
         ),
         sa.Column("notes", sa.Text(), nullable=True),
@@ -135,7 +114,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["prompt_id"], ["prompts.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["prompt_id"], ["prompts.id"], name="test_runs_prompt_id_fkey", ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_test_runs_id", "test_runs", ["id"], unique=False)
@@ -147,7 +126,7 @@ def upgrade() -> None:
         sa.Column("run_index", sa.Integer(), nullable=False),
         sa.Column("output", sa.Text(), nullable=False),
         sa.Column(
-            "parsed_output", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+            "parsed_output", sa.JSON(), nullable=True
         ),
         sa.Column("tokens_used", sa.Integer(), nullable=True),
         sa.Column("latency_ms", sa.Integer(), nullable=True),
@@ -169,10 +148,10 @@ def upgrade() -> None:
         sa.Column("is_valid_json", sa.Boolean(), nullable=True),
         sa.Column("schema_pass", sa.Boolean(), nullable=True),
         sa.Column(
-            "missing_fields", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+            "missing_fields", sa.JSON(), nullable=True
         ),
         sa.Column(
-            "type_mismatches", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+            "type_mismatches", sa.JSON(), nullable=True
         ),
         sa.Column("consistency_score", sa.Float(), nullable=True),
         sa.Column("numeric_accuracy", sa.Float(), nullable=True),
@@ -203,4 +182,4 @@ def downgrade() -> None:
     op.drop_index("ix_prompts_id", table_name="prompts")
     op.drop_table("prompts")
 
-    op.execute(sa.text("DROP TYPE IF EXISTS test_run_status"))
+    # op.execute(sa.text("DROP TYPE IF EXISTS test_run_status"))
