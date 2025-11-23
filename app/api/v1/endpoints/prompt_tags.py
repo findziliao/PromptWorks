@@ -12,6 +12,7 @@ from app.schemas import (
     PromptTagListResponse,
     PromptTagRead,
     PromptTagStats,
+    PromptTagUpdate,
 )
 
 router = APIRouter()
@@ -71,6 +72,38 @@ def create_prompt_tag(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="同名标签已存在"
         ) from exc
+    db.refresh(prompt_tag)
+    return prompt_tag
+
+
+@router.patch("/{tag_id}", response_model=PromptTagRead)
+def update_prompt_tag(
+    *, db: Session = Depends(get_db), tag_id: int, payload: PromptTagUpdate
+) -> PromptTag:
+    """更新指定 Prompt 标签的名称或颜色。"""
+
+    prompt_tag = db.get(PromptTag, tag_id)
+    if not prompt_tag:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="标签不存在",
+        )
+
+    if payload.name is not None:
+        prompt_tag.name = payload.name
+    if payload.color is not None:
+        prompt_tag.color = payload.color
+
+    try:
+        db.add(prompt_tag)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="同名标签已存在",
+        ) from exc
+
     db.refresh(prompt_tag)
     return prompt_tag
 

@@ -104,3 +104,52 @@ def test_delete_unused_tag_succeeds(client: TestClient) -> None:
     list_resp = client.get("/api/v1/prompt-tags/")
     data = list_resp.json()
     assert all(item["id"] != tag_id for item in data["items"])
+
+
+def test_update_prompt_tag_name_and_color(client: TestClient) -> None:
+    """可以更新标签名称和颜色，并保持规范化。"""
+
+    create_resp = client.post(
+        "/api/v1/prompt-tags/",
+        json={"name": "旧名称", "color": "#123456"},
+    )
+    assert create_resp.status_code == 201
+    created = create_resp.json()
+
+    update_resp = client.patch(
+        f"/api/v1/prompt-tags/{created['id']}",
+        json={"name": "新名称", "color": "#abcdef"},
+    )
+    assert update_resp.status_code == 200
+    updated = update_resp.json()
+    assert updated["name"] == "新名称"
+    assert updated["color"] == "#ABCDEF"
+
+    list_resp = client.get("/api/v1/prompt-tags/")
+    data = list_resp.json()
+    names = {item["name"] for item in data["items"]}
+    assert "旧名称" not in names
+    assert "新名称" in names
+
+
+def test_update_prompt_tag_duplicate_name_returns_400(client: TestClient) -> None:
+    """更新为重复名称时应返回 400。"""
+
+    first = client.post(
+        "/api/v1/prompt-tags/",
+        json={"name": "A", "color": "#111111"},
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        "/api/v1/prompt-tags/",
+        json={"name": "B", "color": "#222222"},
+    )
+    assert second.status_code == 201
+    second_id = second.json()["id"]
+
+    update_resp = client.patch(
+        f"/api/v1/prompt-tags/{second_id}",
+        json={"name": "A"},
+    )
+    assert update_resp.status_code == 400

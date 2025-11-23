@@ -9,6 +9,7 @@ export const messages = {
       save: '保存',
       create: '新建',
       edit: '编辑',
+      view: '查看',
       descriptionNone: '暂无描述',
       notEnabled: '未启用'
     },
@@ -215,13 +216,16 @@ export const messages = {
         nameRequired: '请填写标签名称',
         createSuccess: '标签创建成功',
         createFailed: '创建标签失败，请稍后重试',
+         updateSuccess: '标签更新成功',
+         updateFailed: '更新标签失败，请稍后重试',
         deleteConfirmTitle: '删除确认',
         deleteConfirmMessage: '确认删除标签“{name}”并解除关联？',
         confirmDelete: '确认删除',
         deleteSuccess: '标签已删除',
         deleteFailed: '删除标签失败，请稍后重试',
         deleteBlocked: '仍有关联 Prompt 使用该标签，请先迁移或删除后再尝试'
-      }
+      },
+      editDialogTitle: '编辑标签'
     },
     quickTest: {
       headerTitle: '快速测试',
@@ -1196,6 +1200,7 @@ export const messages = {
       save: 'Save',
       create: 'Create',
       edit: 'Edit',
+      view: 'View',
       descriptionNone: 'No description',
       notEnabled: 'Not enabled'
     },
@@ -1402,13 +1407,16 @@ export const messages = {
         nameRequired: 'Please provide a tag name.',
         createSuccess: 'Tag created successfully.',
         createFailed: 'Failed to create tag. Please try again later.',
+        updateSuccess: 'Tag updated successfully.',
+        updateFailed: 'Failed to update tag. Please try again later.',
         deleteConfirmTitle: 'Delete Confirmation',
         deleteConfirmMessage: 'Delete tag “{name}” and detach from prompts?',
         confirmDelete: 'Delete',
         deleteSuccess: 'Tag deleted.',
         deleteFailed: 'Failed to delete tag. Please try again later.',
         deleteBlocked: 'Some prompts still use this tag. Please migrate or remove them first.'
-      }
+      },
+      editDialogTitle: 'Edit Tag'
     },
     quickTest: {
       headerTitle: 'Quick Test',
