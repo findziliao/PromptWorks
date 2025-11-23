@@ -209,3 +209,28 @@ class PromptCollaboratorRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PromptImplementationCreate(BaseModel):
+    """创建 Prompt 实施记录入参。"""
+
+    content: str
+
+    @model_validator(mode="after")
+    def normalize_payload(self):
+        trimmed = self.content.strip()
+        if not trimmed:
+            raise ValueError("content 不能为空字符串")
+        self.content = trimmed
+        return self
+
+
+class PromptImplementationRead(BaseModel):
+    """Prompt 实施记录出参。"""
+
+    id: int
+    prompt_id: int
+    content: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

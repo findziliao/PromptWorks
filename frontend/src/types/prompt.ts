@@ -33,6 +33,13 @@ export interface PromptCollaborator {
   created_at: string
 }
 
+export interface PromptImplementationRecord {
+  id: number
+  prompt_id: number
+  content: string
+  created_at: string
+}
+
 export interface Prompt {
   id: number
   name: string

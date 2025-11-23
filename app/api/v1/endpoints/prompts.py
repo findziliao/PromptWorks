@@ -16,6 +16,7 @@ from app.models.prompt import (
     PromptCollaborator,
     PromptTag,
     PromptVersion,
+    PromptImplementationRecord,
 )
 from app.models.user import User
 from app.schemas.prompt import (
@@ -24,6 +25,8 @@ from app.schemas.prompt import (
     PromptRead,
     PromptShareRequest,
     PromptUpdate,
+    PromptImplementationCreate,
+    PromptImplementationRead,
 )
 
 router = APIRouter()
@@ -400,6 +403,68 @@ def delete_prompt(
     db.delete(prompt)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/{prompt_id}/implementations",
+    response_model=list[PromptImplementationRead],
+    summary="获取 Prompt 的实施记录列表",
+)
+def list_prompt_implementations(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    prompt_id: int,
+) -> Sequence[PromptImplementationRecord]:
+    """按时间倒序列出指定 Prompt 的实施记录。"""
+
+    prompt = _get_prompt_or_404(
+        db,
+        prompt_id,
+        current_user=current_user,
+    )
+
+    stmt = (
+        select(PromptImplementationRecord)
+        .where(PromptImplementationRecord.prompt_id == prompt.id)
+        .order_by(
+            PromptImplementationRecord.created_at.desc(),
+            PromptImplementationRecord.id.desc(),
+        )
+    )
+    return list(db.execute(stmt).scalars().all())
+
+
+@router.post(
+    "/{prompt_id}/implementations",
+    response_model=PromptImplementationRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="为 Prompt 新增实施记录",
+)
+def create_prompt_implementation(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    prompt_id: int,
+    payload: PromptImplementationCreate,
+) -> PromptImplementationRecord:
+    """为指定 Prompt 追加一条实施记录。
+
+    仅拥有编辑权限的用户可以写入实施记录。
+    """
+
+    prompt = _get_prompt_or_404(
+        db,
+        prompt_id,
+        current_user=current_user,
+        require_edit=True,
+    )
+
+    record = PromptImplementationRecord(prompt_id=prompt.id, content=payload.content)
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
 
 
 @router.get(

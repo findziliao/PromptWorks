@@ -494,3 +494,95 @@ def test_delete_prompt_not_found(client: TestClient, db_session: Session) -> Non
 
     response = client.delete("/api/v1/prompts/999999", headers=headers)
     assert response.status_code == 404
+
+
+def test_create_and_list_prompt_implementation_records(
+    client: TestClient, db_session: Session
+) -> None:
+    """为 Prompt 追加实施记录后应能按时间倒序列出。"""
+
+    headers = _auth_headers(db_session, username="owner")
+    create_resp = client.post(
+        "/api/v1/prompts/",
+        headers=headers,
+        json={
+            "name": "实施记录测试",
+            "version": "v1",
+            "content": "初始内容",
+            "class_name": "实施分类",
+        },
+    )
+    assert create_resp.status_code == 201
+    prompt_id = create_resp.json()["id"]
+
+    first_resp = client.post(
+        f"/api/v1/prompts/{prompt_id}/implementations",
+        headers=headers,
+        json={"content": "第一条实施记录"},
+    )
+    assert first_resp.status_code == 201
+    first_data = first_resp.json()
+    assert first_data["prompt_id"] == prompt_id
+    assert first_data["content"] == "第一条实施记录"
+    assert "created_at" in first_data
+
+    second_resp = client.post(
+        f"/api/v1/prompts/{prompt_id}/implementations",
+        headers=headers,
+        json={"content": "第二条实施记录"},
+    )
+    assert second_resp.status_code == 201
+
+    list_resp = client.get(
+        f"/api/v1/prompts/{prompt_id}/implementations", headers=headers
+    )
+    assert list_resp.status_code == 200
+    records = list_resp.json()
+    assert len(records) == 2
+    # 按创建时间倒序返回，最新记录在最前
+    assert records[0]["content"] == "第二条实施记录"
+    assert records[1]["content"] == "第一条实施记录"
+
+
+def test_create_prompt_implementation_requires_edit_permission(
+    client: TestClient, db_session: Session
+) -> None:
+    """仅具备编辑权限的用户可以写入实施记录，查看权限则允许读取。"""
+
+    owner_headers = _auth_headers(db_session, username="owner")
+    readonly_headers = _auth_headers(db_session, username="readonly")
+
+    create_resp = client.post(
+        "/api/v1/prompts/",
+        headers=owner_headers,
+        json={
+            "name": "权限测试 Prompt",
+            "version": "v1",
+            "content": "内容",
+            "class_name": "权限分类",
+        },
+    )
+    prompt_id = create_resp.json()["id"]
+
+    # 将 Prompt 以只读角色分享给 readonly 用户
+    share_resp = client.post(
+        f"/api/v1/prompts/{prompt_id}/share",
+        headers=owner_headers,
+        json={"username": "readonly", "role": "viewer"},
+    )
+    assert share_resp.status_code == 201
+
+    # 只读用户可以查看实施记录列表（即便当前为空）
+    list_resp = client.get(
+        f"/api/v1/prompts/{prompt_id}/implementations",
+        headers=readonly_headers,
+    )
+    assert list_resp.status_code == 200
+
+    # 但尝试写入实施记录应被拒绝
+    create_impl_resp = client.post(
+        f"/api/v1/prompts/{prompt_id}/implementations",
+        headers=readonly_headers,
+        json={"content": "非法写入"},
+    )
+    assert create_impl_resp.status_code == 403

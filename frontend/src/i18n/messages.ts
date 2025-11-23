@@ -704,6 +704,21 @@ export const messages = {
         empty: '暂无版本内容',
         historyTitle: '历史版本'
       },
+      implementation: {
+        title: 'Prompt 实施',
+        subtitle: '记录 Prompt 在线实施过程中的情况、效果与问题。',
+        field: {
+          label: '实施记录',
+          placeholder: '请输入本次实施的情况、效果或发现的问题，支持多行。'
+        },
+        saveButton: '保存实施记录',
+        empty: '当前暂无实施记录',
+        loadFailed: '加载实施记录失败',
+        saveSuccess: '实施记录已保存',
+        validation: {
+          contentRequired: '请输入要保存的实施记录内容'
+        }
+      },
       test: {
         title: 'Prompt 测试记录',
         subtitle: '记录历史测试结果，支持快速备案',
@@ -1897,6 +1912,21 @@ export const messages = {
         copyEmpty: 'No content to copy for this version.',
         empty: 'No content for this version yet.',
         historyTitle: 'Version History'
+      },
+      implementation: {
+        title: 'Prompt Implementation',
+        subtitle: 'Record how this prompt is implemented and performs in real scenarios.',
+        field: {
+          label: 'Implementation Log',
+          placeholder: 'Describe this rollout: scenario, outcome, issues, etc. (multi-line supported).'
+        },
+        saveButton: 'Save Log',
+        empty: 'No implementation logs yet.',
+        loadFailed: 'Failed to load implementation logs.',
+        saveSuccess: 'Implementation log saved.',
+        validation: {
+          contentRequired: 'Please enter the log content before saving.'
+        }
       },
       test: {
         title: 'Prompt Test Records',

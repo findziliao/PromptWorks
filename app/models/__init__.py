@@ -7,6 +7,7 @@ from app.models.prompt import (
     PromptCollaborator,
     PromptTag,
     PromptVersion,
+    PromptImplementationRecord,
 )
 from app.models.result import Result
 from app.models.usage import LLMUsageLog
@@ -28,6 +29,7 @@ __all__ = [
     "PromptCollaborator",
     "PromptTag",
     "PromptVersion",
+    "PromptImplementationRecord",
     "TestRun",
     "TestRunStatus",
     "Result",

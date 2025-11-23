@@ -191,6 +191,13 @@ class Prompt(Base):
         cascade="all, delete-orphan",
     )
 
+    implementations: Mapped[list["PromptImplementationRecord"]] = relationship(
+        "PromptImplementationRecord",
+        back_populates="prompt",
+        cascade="all, delete-orphan",
+        order_by="PromptImplementationRecord.created_at.desc()",
+    )
+
 
 class PromptVersion(Base):
     __tablename__ = "prompts_versions"
@@ -231,10 +238,26 @@ class PromptVersion(Base):
     )
 
 
+class PromptImplementationRecord(Base):
+    __tablename__ = "prompt_implementation_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    prompt_id: Mapped[int] = mapped_column(
+        ForeignKey("prompts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    prompt: Mapped["Prompt"] = relationship("Prompt", back_populates="implementations")
+
+
 __all__ = [
     "PromptClass",
     "Prompt",
     "PromptTag",
     "PromptVersion",
     "PromptCollaborator",
+    "PromptImplementationRecord",
 ]

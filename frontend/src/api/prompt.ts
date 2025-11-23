@@ -1,5 +1,10 @@
 import { request, type HttpError } from './http'
-import type { Prompt, PromptCollaborator, PromptVersion } from '../types/prompt'
+import type {
+  Prompt,
+  PromptCollaborator,
+  PromptVersion,
+  PromptImplementationRecord
+} from '../types/prompt'
 
 export interface PromptListParams {
   q?: string
@@ -35,6 +40,10 @@ export interface PromptUpdatePayload {
 export interface PromptSharePayload {
   username: string
   role: 'viewer' | 'editor'
+}
+
+export interface PromptImplementationCreatePayload {
+  content: string
 }
 
 export async function listPrompts(params: PromptListParams = {}): Promise<Prompt[]> {
@@ -106,6 +115,22 @@ export async function sharePrompt(
 export async function revokePromptShare(promptId: number, userId: number): Promise<void> {
   await request<void>(`/prompts/${promptId}/share/${userId}`, {
     method: 'DELETE'
+  })
+}
+
+export async function listPromptImplementations(
+  promptId: number
+): Promise<PromptImplementationRecord[]> {
+  return request<PromptImplementationRecord[]>(`/prompts/${promptId}/implementations`)
+}
+
+export async function createPromptImplementation(
+  promptId: number,
+  payload: PromptImplementationCreatePayload
+): Promise<PromptImplementationRecord> {
+  return request<PromptImplementationRecord>(`/prompts/${promptId}/implementations`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
   })
 }
 
