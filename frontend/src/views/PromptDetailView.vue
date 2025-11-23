@@ -79,10 +79,20 @@
         />
         <el-form label-width="80px" class="meta-form">
           <el-form-item :label="t('promptDetail.info.dialog.authorLabel')">
-            <el-input
+            <el-select
               v-model="metaAuthor"
+              filterable
+              clearable
+              :loading="shareUserLoading"
               :placeholder="t('promptDetail.info.dialog.authorPlaceholder')"
-            />
+            >
+              <el-option
+                v-for="user in shareUserOptions"
+                :key="user.id"
+                :label="user.username"
+                :value="user.username"
+              />
+            </el-select>
           </el-form-item>
           <el-form-item :label="t('promptDetail.info.dialog.classLabel')">
             <el-select
@@ -204,10 +214,21 @@
       >
         <el-form :model="shareForm" label-width="100px" class="share-form">
           <el-form-item :label="t('promptDetail.share.fields.username')">
-            <el-input
+            <el-select
               v-model="shareForm.username"
+              filterable
+              allow-create
+              default-first-option
+              :loading="shareUserLoading"
               :placeholder="t('promptDetail.share.placeholders.username')"
-            />
+            >
+              <el-option
+                v-for="user in shareUserOptions"
+                :key="user.id"
+                :label="user.username"
+                :value="user.username"
+              />
+            </el-select>
           </el-form-item>
           <el-form-item :label="t('promptDetail.share.fields.role')">
             <el-radio-group v-model="shareForm.role">
@@ -385,11 +406,13 @@ import {
   sharePrompt,
   updatePrompt
 } from '../api/prompt'
+import { listUsers } from '../api/user'
 import { listTestRuns } from '../api/testRun'
 import { listPromptTestTasks } from '../api/promptTest'
 import type { TestRun } from '../types/testRun'
 import type { PromptTestTask } from '../types/promptTest'
 import type { PromptCollaborator, PromptCollaboratorRole } from '../types/prompt'
+import type { User } from '../types/user'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '../composables/useAuth'
@@ -427,6 +450,9 @@ const collaboratorsLoading = ref(false)
 const shareDialogVisible = ref(false)
 const shareLoading = ref(false)
 const revokeLoadingId = ref<number | null>(null)
+
+const shareUserOptions = ref<User[]>([])
+const shareUserLoading = ref(false)
 
 const shareForm = reactive<{
   username: string
@@ -705,6 +731,29 @@ async function fetchMeta() {
     metaError.value = extractMetaError(error)
   } finally {
     isMetaLoading.value = false
+  }
+}
+
+async function fetchShareUserOptions() {
+  const user = currentUser.value
+  if (!user) {
+    shareUserOptions.value = []
+    return
+  }
+
+  shareUserLoading.value = true
+  try {
+    if (user.is_superuser) {
+      const users = await listUsers({ limit: 200 })
+      shareUserOptions.value = users
+    } else {
+      shareUserOptions.value = [user]
+    }
+  } catch (error) {
+    void error
+    shareUserOptions.value = user ? [user] : []
+  } finally {
+    shareUserLoading.value = false
   }
 }
 
@@ -1071,6 +1120,7 @@ async function handleSaveMeta() {
 
     await updatePrompt(prompt.id, payload)
     ElMessage.success(t('promptDetail.messages.updateSuccess'))
+    closeMetaDialog()
     await refreshDetail()
     await fetchMeta()
   } catch (error) {
@@ -1083,6 +1133,7 @@ async function handleSaveMeta() {
 function openMetaDialog() {
   metaDialogVisible.value = true
   resetMetaSelections()
+  void fetchShareUserOptions()
 }
 
 function closeMetaDialog() {
@@ -1093,6 +1144,7 @@ function openShareDialog() {
   shareForm.username = ''
   shareForm.role = 'viewer'
   shareDialogVisible.value = true
+  void fetchShareUserOptions()
 }
 
 const dateTimeFormatter = computed(

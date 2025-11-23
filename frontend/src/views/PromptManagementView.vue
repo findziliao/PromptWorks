@@ -258,7 +258,20 @@
             <el-input v-model="promptForm.name" :placeholder="t('promptManagement.form.titlePlaceholder')" />
           </el-form-item>
           <el-form-item :label="t('promptManagement.form.author')">
-            <el-input v-model="promptForm.author" :placeholder="t('promptManagement.form.authorPlaceholder')" />
+            <el-select
+              v-model="promptForm.author"
+              filterable
+              clearable
+              :loading="authorLoading"
+              :placeholder="t('promptManagement.form.authorPlaceholder')"
+            >
+              <el-option
+                v-for="user in authorOptions"
+                :key="user.id"
+                :label="user.username"
+                :value="user.username"
+              />
+            </el-select>
           </el-form-item>
           <el-form-item :label="t('promptManagement.form.description')">
             <el-input
@@ -364,9 +377,12 @@ import { listPromptClasses, type PromptClassStats } from '../api/promptClass'
 import { listPromptTags, type PromptTagStats } from '../api/promptTag'
 import { listLLMProviders } from '../api/llmProvider'
 import { invokeQuickTest, type QuickTestStreamPayload } from '../api/quickTest'
+import { listUsers } from '../api/user'
 import type { ChatMessagePayload, LLMProvider } from '../types/llm'
 import type { Prompt } from '../types/prompt'
+import type { User } from '../types/user'
 import { useI18n } from 'vue-i18n'
+import { useAuth } from '../composables/useAuth'
 
 type SortKey = 'default' | 'created_at' | 'updated_at' | 'author'
 
@@ -382,6 +398,7 @@ interface PromptFormState {
 
 const router = useRouter()
 const { t, locale } = useI18n()
+const { currentUser } = useAuth()
 const prompts = ref<Prompt[]>([])
 const promptClasses = ref<PromptClassStats[]>([])
 const promptTags = ref<PromptTagStats[]>([])
@@ -407,6 +424,9 @@ const aiCascaderProps = reactive({
   expandTrigger: 'hover' as const,
   emitPath: true
 })
+
+const authorOptions = ref<User[]>([])
+const authorLoading = ref(false)
 
 const classOptions = computed(() => {
   return promptClasses.value
@@ -517,9 +537,11 @@ const promptForm = reactive<PromptFormState>({
 function resetPromptForm() {
   promptForm.name = ''
   promptForm.description = ''
-  promptForm.author = ''
+  const defaultAuthor = currentUser.value?.username ?? authorOptions.value[0]?.username ?? ''
+  promptForm.author = defaultAuthor
   promptForm.classId = classOptions.value[0]?.id ?? null
-  promptForm.tagIds = []
+  const defaultTag = tagOptions.value.find((item) => item.name === '待实施')
+  promptForm.tagIds = defaultTag ? [defaultTag.id] : []
   promptForm.version = ''
   promptForm.content = ''
 }
@@ -622,7 +644,6 @@ function applyAiSuggestion(raw: unknown) {
   const title = suggestion.title
   const description = suggestion.description
   const content = suggestion.content
-  const author = suggestion.author
   const version = suggestion.version
   const tags = suggestion.tags
 
@@ -634,9 +655,6 @@ function applyAiSuggestion(raw: unknown) {
   }
   if (typeof content === 'string' && content.trim()) {
     promptForm.content = content
-  }
-  if (typeof author === 'string' && author.trim()) {
-    promptForm.author = author.trim()
   }
   if (typeof version === 'string' && version.trim()) {
     promptForm.version = version.trim()
@@ -825,6 +843,29 @@ async function bootstrap() {
   isLoading.value = false
 }
 
+async function fetchAuthorOptions() {
+  const user = currentUser.value
+  if (!user) {
+    authorOptions.value = []
+    return
+  }
+
+  authorLoading.value = true
+  try {
+    if (user.is_superuser) {
+      const users = await listUsers({ limit: 200 })
+      authorOptions.value = users
+    } else {
+      authorOptions.value = [user]
+    }
+  } catch (error) {
+    void error
+    authorOptions.value = user ? [user] : []
+  } finally {
+    authorLoading.value = false
+  }
+}
+
 watch(classOptions, (options) => {
   if (activeClassKey.value !== 'all') {
     const exists = options.some((item) => String(item.id) === activeClassKey.value)
@@ -844,11 +885,28 @@ watch(classOptions, (options) => {
 watch(tagOptions, (options) => {
   if (!options.length) {
     selectedTagIds.value = []
+    promptForm.tagIds = []
     return
   }
   const available = new Set(options.map((item) => item.id))
   selectedTagIds.value = selectedTagIds.value.filter((id) => available.has(id))
+  promptForm.tagIds = promptForm.tagIds.filter((id) => available.has(id))
+
+  if (createDialogVisible.value && promptForm.tagIds.length === 0) {
+    const defaultTag = options.find((item) => item.name === '待实施')
+    if (defaultTag) {
+      promptForm.tagIds = [defaultTag.id]
+    }
+  }
 })
+
+watch(
+  () => currentUser.value,
+  () => {
+    void fetchAuthorOptions()
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   void bootstrap()
