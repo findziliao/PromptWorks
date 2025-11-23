@@ -56,6 +56,9 @@
         </el-table-column>
         <el-table-column :label="t('promptTagManagement.columns.actions')" width="120" align="center">
           <template #default="{ row }">
+            <el-button type="primary" link @click="openEditDialog(row)">
+              {{ t('common.edit') }}
+            </el-button>
             <el-button type="danger" link @click="handleDelete(row)">
               {{ t('promptTagManagement.delete') }}
             </el-button>
@@ -64,7 +67,11 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="t('promptTagManagement.dialogTitle')" width="520px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEditMode ? t('promptTagManagement.editDialogTitle') : t('promptTagManagement.dialogTitle')"
+      width="520px"
+    >
       <el-form :model="tagForm" label-width="100px" class="dialog-form">
         <el-form-item :label="t('promptTagManagement.form.name')">
           <el-input v-model="tagForm.name" :placeholder="t('promptTagManagement.form.namePlaceholder')" />
@@ -75,7 +82,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">{{ t('promptTagManagement.footer.cancel') }}</el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleCreate">
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
           {{ t('promptTagManagement.footer.submit') }}
         </el-button>
       </template>
@@ -91,6 +98,7 @@ import {
   createPromptTag,
   deletePromptTag,
   listPromptTags,
+  updatePromptTag,
   type PromptTagStats
 } from '../api/promptTag'
 import { useI18n } from 'vue-i18n'
@@ -136,6 +144,8 @@ const tagForm = reactive({
   name: '',
   color: '#409EFF'
 })
+const isEditMode = ref(false)
+const editingTagId = ref<number | null>(null)
 
 async function fetchPromptTags() {
   tableLoading.value = true
@@ -157,27 +167,49 @@ function resetTagForm() {
 }
 
 function openDialog() {
+  isEditMode.value = false
+  editingTagId.value = null
   resetTagForm()
   dialogVisible.value = true
 }
 
-async function handleCreate() {
+function openEditDialog(row: PromptTagStats) {
+  isEditMode.value = true
+  editingTagId.value = row.id
+  tagForm.name = row.name
+  tagForm.color = row.color
+  dialogVisible.value = true
+}
+
+async function handleSubmit() {
   if (!tagForm.name.trim()) {
     ElMessage.warning(t('promptTagManagement.messages.nameRequired'))
     return
   }
   submitLoading.value = true
   try {
-    await createPromptTag({
-      name: tagForm.name.trim(),
-      color: tagForm.color.toUpperCase()
-    })
-    ElMessage.success(t('promptTagManagement.messages.createSuccess'))
+    if (!isEditMode.value) {
+      await createPromptTag({
+        name: tagForm.name.trim(),
+        color: tagForm.color.toUpperCase()
+      })
+      ElMessage.success(t('promptTagManagement.messages.createSuccess'))
+    } else if (editingTagId.value != null) {
+      await updatePromptTag(editingTagId.value, {
+        name: tagForm.name.trim(),
+        color: tagForm.color.toUpperCase()
+      })
+      ElMessage.success(t('promptTagManagement.messages.updateSuccess'))
+    }
     dialogVisible.value = false
     await fetchPromptTags()
   } catch (error: any) {
     console.error(error)
-    const message = error?.payload?.detail ?? t('promptTagManagement.messages.createFailed')
+    const message =
+      error?.payload?.detail ??
+      (isEditMode.value
+        ? t('promptTagManagement.messages.updateFailed')
+        : t('promptTagManagement.messages.createFailed'))
     ElMessage.error(message)
   } finally {
     submitLoading.value = false

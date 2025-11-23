@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Iterable
 
+from app.core.config import settings
+
 
 @dataclass(frozen=True)
 class ProviderDefaults:
@@ -19,7 +21,7 @@ _COMMON_PROVIDERS: Dict[str, ProviderDefaults] = {
     "openai": ProviderDefaults(
         key="openai",
         name="OpenAI",
-        base_url="https://api.openai.com/v1",
+        base_url=settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
         logo_emoji=None,
         description="通用对话与代码生成能力强，官方模型接入通道。",
         logo_url=(
@@ -30,7 +32,7 @@ _COMMON_PROVIDERS: Dict[str, ProviderDefaults] = {
     "anthropic": ProviderDefaults(
         key="anthropic",
         name="Anthropic",
-        base_url="https://api.anthropic.com",
+        base_url=settings.ANTHROPIC_BASE_URL or "https://api.anthropic.com",
         logo_emoji=None,
         description="Claude 系列专注长文本与合规场景。",
         logo_url=(

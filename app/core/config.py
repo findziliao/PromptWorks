@@ -14,11 +14,15 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "PromptWorks"
     DATABASE_URL: str = (
-        "postgresql+psycopg://promptworks:promptworks@localhost:5432/promptworks"
+        "mysql+pymysql://promptworks:promptworks@localhost:3306/promptworks"
     )
     REDIS_URL: str = "redis://localhost:6379/0"
+    SECRET_KEY: str = "CHANGE_ME_IN_PRODUCTION"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     OPENAI_API_KEY: str | None = None
+    OPENAI_BASE_URL: str | None = None
     ANTHROPIC_API_KEY: str | None = None
+    ANTHROPIC_BASE_URL: str | None = None
     BACKEND_CORS_ORIGINS: list[str] | str = ["http://localhost:5173"]
     BACKEND_CORS_ALLOW_CREDENTIALS: bool = True
 

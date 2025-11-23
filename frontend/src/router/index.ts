@@ -1,4 +1,5 @@
 ﻿import { createRouter, createWebHistory } from 'vue-router'
+import { getAccessToken } from '../api/http'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -99,8 +100,43 @@ const router = createRouter({
       component: () => import('../views/UsageManagementView.vue'),
       meta: { menu: 'usage', title: '用量管理' }
     },
+    {
+      path: '/users',
+      name: 'user-management',
+      component: () => import('../views/UserManagementView.vue'),
+      meta: { menu: 'user', title: '用户管理' }
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/AuthView.vue'),
+      meta: { menu: 'prompt', title: '登录', requiresAuth: false }
+    },
     { path: '/:pathMatch(.*)*', redirect: '/' }
   ]
+})
+
+router.beforeEach((to, from, next) => {
+  const requiresAuth = to.meta.requiresAuth !== false
+  if (!requiresAuth) {
+    next()
+    return
+  }
+
+  const token = getAccessToken()
+  if (!token) {
+    if (to.name === 'login') {
+      next()
+      return
+    }
+    next({
+      name: 'login',
+      query: { redirect: to.fullPath }
+    })
+    return
+  }
+
+  next()
 })
 
 export default router

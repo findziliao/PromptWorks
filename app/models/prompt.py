@@ -16,8 +16,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover - 类型检查辅助
     from app.models.test_run import TestRun
+    from app.models.user import User
 
 from app.models.base import Base
 
@@ -84,10 +85,44 @@ class PromptTag(Base):
     )
 
 
+class PromptCollaborator(Base):
+    __tablename__ = "prompt_collaborators"
+    __table_args__ = (
+        UniqueConstraint(
+            "prompt_id", "user_id", name="uq_prompt_collaborators_prompt_user"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    prompt_id: Mapped[int] = mapped_column(
+        ForeignKey("prompts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    prompt: Mapped["Prompt"] = relationship("Prompt", back_populates="collaborators")
+    user: Mapped["User"] = relationship("User", back_populates="shared_prompts")
+
+    @property
+    def username(self) -> str:
+        """Convenience accessor used in API schemas."""
+
+        return self.user.username if self.user is not None else ""
+
+
 class Prompt(Base):
     __tablename__ = "prompts"
     __table_args__ = (
-        UniqueConstraint("class_id", "name", name="uq_prompt_class_name"),
+        UniqueConstraint("class_id", "name", "owner_id", name="uq_prompt_class_name"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -99,6 +134,9 @@ class Prompt(Base):
         ),
         nullable=False,
         index=True,
+    )
+    owner_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -120,10 +158,14 @@ class Prompt(Base):
         onupdate=func.now(),
         nullable=False,
     )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     prompt_class: Mapped[PromptClass] = relationship(
         "PromptClass", back_populates="prompts"
     )
+    owner: Mapped["User | None"] = relationship("User", back_populates="prompts")
     versions: Mapped[list["PromptVersion"]] = relationship(
         "PromptVersion",
         back_populates="prompt",
@@ -142,6 +184,18 @@ class Prompt(Base):
         "PromptTag",
         secondary=prompt_tag_association,
         back_populates="prompts",
+    )
+    collaborators: Mapped[list["PromptCollaborator"]] = relationship(
+        "PromptCollaborator",
+        back_populates="prompt",
+        cascade="all, delete-orphan",
+    )
+
+    implementations: Mapped[list["PromptImplementationRecord"]] = relationship(
+        "PromptImplementationRecord",
+        back_populates="prompt",
+        cascade="all, delete-orphan",
+        order_by="PromptImplementationRecord.created_at.desc()",
     )
 
 
@@ -184,4 +238,26 @@ class PromptVersion(Base):
     )
 
 
-__all__ = ["PromptClass", "Prompt", "PromptTag", "PromptVersion"]
+class PromptImplementationRecord(Base):
+    __tablename__ = "prompt_implementation_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    prompt_id: Mapped[int] = mapped_column(
+        ForeignKey("prompts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    prompt: Mapped["Prompt"] = relationship("Prompt", back_populates="implementations")
+
+
+__all__ = [
+    "PromptClass",
+    "Prompt",
+    "PromptTag",
+    "PromptVersion",
+    "PromptCollaborator",
+    "PromptImplementationRecord",
+]

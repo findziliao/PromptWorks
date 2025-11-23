@@ -22,6 +22,29 @@
               active-color="#303133"
               inactive-color="#409EFF"
             />
+            <div class="header-user">
+              <span v-if="isAuthenticated" class="user-name">
+                {{ currentUser?.username }}
+              </span>
+              <el-button
+                v-if="isAuthenticated"
+                type="primary"
+                text
+                size="small"
+                @click="handleLogout"
+              >
+                {{ t('auth.actions.logout') }}
+              </el-button>
+              <el-button
+                v-else
+                type="primary"
+                text
+                size="small"
+                @click="handleGoLogin"
+              >
+                {{ t('auth.actions.login') }}
+              </el-button>
+            </div>
           </div>
         </el-header>
         <el-container>
@@ -104,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -117,7 +140,8 @@ import {
   Cpu,
   Histogram,
   Sunny,
-  Moon
+  Moon,
+  User
 } from '@element-plus/icons-vue'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import enUs from 'element-plus/es/locale/lang/en'
@@ -127,6 +151,7 @@ import type { SupportedLocale } from './i18n/messages'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useTestingSettings, DEFAULT_TIMEOUT_SECONDS } from './composables/useTestingSettings'
+import { useAuth } from './composables/useAuth'
 
 interface MenuItem {
   index: string
@@ -150,6 +175,8 @@ const {
   fetchTimeouts,
   saveTimeouts
 } = useTestingSettings()
+
+const { currentUser, isAuthenticated, loadUser, logout } = useAuth()
 
 const settingsDialogVisible = ref(false)
 const settingsLoading = ref(false)
@@ -237,20 +264,37 @@ function syncSettingsFormFromRefs() {
     testTaskTimeout.value ?? DEFAULT_TIMEOUT_SECONDS
 }
 
-const menuItems = computed<MenuItem[]>(() => [
-  { index: 'prompt', label: t('menu.prompt'), routeName: 'prompt-management', icon: Collection },
-  { index: 'quick-test', label: t('menu.quickTest'), routeName: 'quick-test', icon: MagicStick },
-  { index: 'test-job', label: t('menu.testJob'), routeName: 'test-job-management', icon: Memo },
-  { index: 'class', label: t('menu.class'), routeName: 'class-management', icon: Files },
-  { index: 'tag', label: t('menu.tag'), routeName: 'tag-management', icon: Tickets },
-  { index: 'llm', label: t('menu.llm'), routeName: 'llm-management', icon: Cpu },
-  { index: 'usage', label: t('menu.usage'), routeName: 'usage-management', icon: Histogram }
-])
+const menuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = [
+    { index: 'prompt', label: t('menu.prompt'), routeName: 'prompt-management', icon: Collection },
+    { index: 'quick-test', label: t('menu.quickTest'), routeName: 'quick-test', icon: MagicStick },
+    { index: 'test-job', label: t('menu.testJob'), routeName: 'test-job-management', icon: Memo },
+    { index: 'class', label: t('menu.class'), routeName: 'class-management', icon: Files },
+    { index: 'tag', label: t('menu.tag'), routeName: 'tag-management', icon: Tickets },
+    { index: 'llm', label: t('menu.llm'), routeName: 'llm-management', icon: Cpu },
+    { index: 'usage', label: t('menu.usage'), routeName: 'usage-management', icon: Histogram }
+  ]
+
+  if (currentUser.value?.is_superuser) {
+    items.push({
+      index: 'user',
+      label: t('menu.user'),
+      routeName: 'user-management',
+      icon: User
+    })
+  }
+
+  return items
+})
 
 const activeMenu = computed(() => (route.meta.menu as string | undefined) ?? 'prompt')
 
 watch(language, (value) => {
   setLocale(value)
+})
+
+onMounted(() => {
+  void loadUser()
 })
 
 watch(isDark, (value) => toggleTheme(value), { immediate: true })
@@ -345,6 +389,15 @@ function handleMenuSelect(index: string) {
     router.push({ name: target.routeName })
   }
 }
+
+async function handleLogout() {
+  await logout()
+  router.push({ name: 'login' })
+}
+
+function handleGoLogin() {
+  router.push({ name: 'login' })
+}
 </script>
 
 <style scoped>
@@ -382,6 +435,16 @@ function handleMenuSelect(index: string) {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name {
+  font-size: 14px;
 }
 
 .language-select {

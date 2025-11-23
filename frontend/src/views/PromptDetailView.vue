@@ -78,6 +78,22 @@
           class="meta-alert"
         />
         <el-form label-width="80px" class="meta-form">
+          <el-form-item :label="t('promptDetail.info.dialog.authorLabel')">
+            <el-select
+              v-model="metaAuthor"
+              filterable
+              clearable
+              :loading="shareUserLoading"
+              :placeholder="t('promptDetail.info.dialog.authorPlaceholder')"
+            >
+              <el-option
+                v-for="user in shareUserOptions"
+                :key="user.id"
+                :label="user.username"
+                :value="user.username"
+              />
+            </el-select>
+          </el-form-item>
           <el-form-item :label="t('promptDetail.info.dialog.classLabel')">
             <el-select
               v-model="selectedClassId"
@@ -123,6 +139,114 @@
           <el-button @click="closeMetaDialog" :disabled="isMetaSaving">{{ t('common.cancel') }}</el-button>
           <el-button type="primary" :loading="isMetaSaving" :disabled="!canSaveMeta" @click="handleSaveMeta">
             {{ t('common.save') }}
+          </el-button>
+        </template>
+      </el-dialog>
+      <div v-if="canManageSharing" class="info-share">
+        <div class="info-share__header">
+          <span class="info-share__title">{{ t('promptDetail.share.title') }}</span>
+          <el-button type="primary" text size="small" @click="openShareDialog">
+            {{ t('promptDetail.share.addButton') }}
+          </el-button>
+        </div>
+        <el-alert
+          v-if="shareError"
+          :title="shareError"
+          type="warning"
+          show-icon
+          class="share-alert"
+        />
+        <el-table
+          v-else-if="collaborators.length"
+          :data="collaborators"
+          size="small"
+          border
+          class="share-table"
+          v-loading="collaboratorsLoading"
+        >
+          <el-table-column :label="t('promptDetail.share.columns.username')" prop="username" />
+          <el-table-column :label="t('promptDetail.share.columns.role')" prop="role">
+            <template #default="{ row }">
+              <el-tag :type="row.role === 'editor' ? 'success' : 'info'" size="small">
+                {{
+                  row.role === 'editor'
+                    ? t('promptDetail.share.roles.editor')
+                    : t('promptDetail.share.roles.viewer')
+                }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptDetail.share.columns.createdAt')" prop="created_at">
+            <template #default="{ row }">
+              {{ formatDateTime(row.created_at) }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="t('promptDetail.share.columns.actions')" width="140">
+            <template #default="{ row }">
+              <el-popconfirm
+                :title="t('promptDetail.share.confirmRevoke', { name: row.username })"
+                :confirm-button-text="t('common.delete')"
+                :cancel-button-text="t('common.cancel')"
+                icon=""
+                @confirm="() => handleRevokeCollaborator(row)"
+              >
+                <template #reference>
+                  <el-button
+                    type="danger"
+                    text
+                    size="small"
+                    :loading="revokeLoadingId === row.user_id"
+                  >
+                    {{ t('promptDetail.share.revoke') }}
+                  </el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
+        <el-empty v-else :description="t('promptDetail.share.empty')" />
+      </div>
+
+      <el-dialog
+        v-model="shareDialogVisible"
+        :title="t('promptDetail.share.dialogTitle')"
+        width="480px"
+      >
+        <el-form :model="shareForm" label-width="100px" class="share-form">
+          <el-form-item :label="t('promptDetail.share.fields.username')">
+            <el-select
+              v-model="shareForm.username"
+              filterable
+              allow-create
+              default-first-option
+              :loading="shareUserLoading"
+              :placeholder="t('promptDetail.share.placeholders.username')"
+            >
+              <el-option
+                v-for="user in shareUserOptions"
+                :key="user.id"
+                :label="user.username"
+                :value="user.username"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="t('promptDetail.share.fields.role')">
+            <el-radio-group v-model="shareForm.role">
+              <el-radio-button label="viewer">
+                {{ t('promptDetail.share.roles.viewer') }}
+              </el-radio-button>
+              <el-radio-button label="editor">
+                {{ t('promptDetail.share.roles.editor') }}
+              </el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="shareDialogVisible = false" :disabled="shareLoading">
+            {{ t('common.cancel') }}
+          </el-button>
+          <el-button type="primary" :loading="shareLoading" @click="handleShare">
+            {{ t('promptDetail.share.dialogConfirm') }}
           </el-button>
         </template>
       </el-dialog>
@@ -193,100 +317,106 @@
         </aside>
       </div>
       </el-card>
-
-      <el-card class="test-card">
-      <template #header>
-        <div class="test-header">
-          <div>
-            <h3 class="test-title">{{ t('promptDetail.test.title') }}</h3>
-            <span class="test-subtitle">{{ t('promptDetail.test.subtitle') }}</span>
-          </div>
-          <el-button type="primary" size="small" @click="handleCreateTest">{{ t('promptDetail.test.newTest') }}</el-button>
-        </div>
-      </template>
-      <el-alert
-        v-if="testRunError"
-        :title="testRunError"
-        type="error"
-        show-icon
-        class="test-alert"
-      />
-      <el-skeleton v-else-if="testRunLoading && !testRecords.length" animated :rows="3" />
-      <el-table
-        v-else-if="testRecords.length"
-        :data="testRecords"
-        size="small"
-        border
-        v-loading="testRunLoading"
-      >
-        <el-table-column :label="t('promptDetail.test.columns.taskName')" min-width="200">
-          <template #default="{ row }">
-            <span>{{ row.taskName }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column :label="t('promptDetail.test.columns.version')" min-width="180">
-          <template #default="{ row }">
-            <div class="test-record-name">
-              <span>{{ row.versionLabel }}</span>
+      <el-card class="implementation-card">
+        <template #header>
+          <div class="implementation-header">
+            <div>
+              <h3 class="implementation-title">
+                {{ t('promptDetail.implementation.title') }}
+              </h3>
+              <span class="implementation-subtitle">
+                {{ t('promptDetail.implementation.subtitle') }}
+              </span>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column :label="t('promptDetail.test.columns.model')" min-width="140">
-          <template #default="{ row }">{{ row.modelLabel }}</template>
-        </el-table-column>
-        <el-table-column :label="t('promptDetail.test.columns.temperature')" width="100">
-          <template #default="{ row }">{{ formatTemperature(row.temperature) }}</template>
-        </el-table-column>
-        <el-table-column :label="t('promptDetail.test.columns.repetitions')" width="120">
-          <template #default="{ row }">{{ row.repetitions }}</template>
-        </el-table-column>
-        <el-table-column :label="t('promptDetail.test.columns.status')" width="120">
-          <template #default="{ row }">
-            <el-tag :type="statusTagType[row.statusKey] ?? 'info'" size="small">
-              {{ row.statusDisplay }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column :label="t('promptDetail.test.columns.createdAt')" min-width="160">
-          <template #default="{ row }">
-            {{ row.createdAtDisplay }}
-          </template>
-        </el-table-column>
-        <el-table-column :label="t('promptDetail.test.columns.actions')" width="120">
-          <template #default="{ row }">
-            <template v-if="row.canNavigate">
-              <el-button type="primary" link size="small" @click="handleViewTestRecord(row)">
-                {{ t('promptDetail.test.viewResult') }}
-              </el-button>
-            </template>
-            <span v-else class="test-record-empty-action">--</span>
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-empty v-else :description="t('promptDetail.test.empty')" />
+          </div>
+        </template>
+        <div class="implementation-body">
+          <el-form label-width="80px" class="implementation-form">
+            <el-form-item :label="t('promptDetail.implementation.field.label')">
+              <el-input
+                v-model="implementationContent"
+                type="textarea"
+                :autosize="{ minRows: 3, maxRows: 8 }"
+                :placeholder="t('promptDetail.implementation.field.placeholder')"
+              />
+            </el-form-item>
+          </el-form>
+          <div class="implementation-actions">
+            <el-button
+              type="primary"
+              size="small"
+              :loading="implementationSaving"
+              @click="handleSaveImplementation"
+            >
+              {{ t('promptDetail.implementation.saveButton') }}
+            </el-button>
+          </div>
+          <el-alert
+            v-if="implementationError"
+            :title="implementationError"
+            type="error"
+            show-icon
+            class="implementation-alert"
+          />
+          <el-skeleton
+            v-else-if="implementationLoading && !implementationLogs.length"
+            animated
+            :rows="2"
+          />
+          <el-empty
+            v-else-if="!implementationLogs.length"
+            :description="t('promptDetail.implementation.empty')"
+          />
+          <div v-else class="implementation-log-list">
+            <div
+              v-for="log in implementationLogs"
+              :key="log.id"
+              class="implementation-log-item"
+            >
+              <div class="implementation-log-meta">
+                <span class="implementation-log-time">
+                  {{ formatDateTime(log.created_at) }}
+                </span>
+              </div>
+              <p class="implementation-log-content">{{ log.content }}</p>
+            </div>
+          </div>
+        </div>
       </el-card>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { DocumentCopy } from '@element-plus/icons-vue'
 import { usePromptDetail } from '../composables/usePromptDetail'
 import { listPromptClasses, type PromptClassStats } from '../api/promptClass'
 import { listPromptTags, type PromptTagStats } from '../api/promptTag'
-import { updatePrompt } from '../api/prompt'
-import { listTestRuns } from '../api/testRun'
-import { listPromptTestTasks } from '../api/promptTest'
-import type { TestRun } from '../types/testRun'
-import type { PromptTestTask } from '../types/promptTest'
+import {
+  listPromptCollaborators,
+  revokePromptShare,
+  sharePrompt,
+  updatePrompt,
+  listPromptImplementations,
+  createPromptImplementation
+} from '../api/prompt'
+import { listUsers } from '../api/user'
+import type {
+  PromptCollaborator,
+  PromptCollaboratorRole,
+  PromptImplementationRecord
+} from '../types/prompt'
+import type { User } from '../types/user'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
 const { t, locale } = useI18n()
+const { currentUser } = useAuth()
 const currentId = computed(() => {
   const raw = Number(route.params.id)
   return Number.isFinite(raw) && raw > 0 ? raw : null
@@ -308,6 +438,31 @@ const isMetaSaving = ref(false)
 const selectedClassId = ref<number | null>(null)
 const selectedTagIds = ref<number[]>([])
 const metaDialogVisible = ref(false)
+const metaAuthor = ref('')
+
+const collaborators = ref<PromptCollaborator[]>([])
+const shareError = ref<string | null>(null)
+const collaboratorsLoading = ref(false)
+const shareDialogVisible = ref(false)
+const shareLoading = ref(false)
+const revokeLoadingId = ref<number | null>(null)
+
+const shareUserOptions = ref<User[]>([])
+const shareUserLoading = ref(false)
+
+const implementationLogs = ref<PromptImplementationRecord[]>([])
+const implementationContent = ref('')
+const implementationLoading = ref(false)
+const implementationSaving = ref(false)
+const implementationError = ref<string | null>(null)
+
+const shareForm = reactive<{
+  username: string
+  role: PromptCollaboratorRole
+}>({
+  username: '',
+  role: 'viewer'
+})
 
 const classOptions = computed(() =>
   promptClasses.value
@@ -321,6 +476,21 @@ const tagOptions = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name, locale.value))
 )
 
+const canManageSharing = computed(() => {
+  const prompt = detail.value
+  const user = currentUser.value
+  if (!prompt || !user) {
+    return false
+  }
+  if (user.is_superuser) {
+    return true
+  }
+  if (prompt.owner_id != null && prompt.owner_id === user.id) {
+    return true
+  }
+  return false
+})
+
 watch(
   () => detail.value,
   (value) => {
@@ -328,11 +498,14 @@ watch(
       selectedVersionId.value = null
       selectedClassId.value = null
       selectedTagIds.value = []
+      void fetchCollaborators()
       return
     }
     selectedVersionId.value = value.current_version?.id ?? value.versions[0]?.id ?? null
     selectedClassId.value = value.prompt_class.id
     selectedTagIds.value = value.tags.map((tag) => tag.id)
+    metaAuthor.value = value.author ?? ''
+    void fetchCollaborators()
   },
   { immediate: true }
 )
@@ -345,76 +518,6 @@ const selectedVersion = computed(() => {
   const match = prompt.versions.find((item) => item.id === selectedVersionId.value)
   return match ?? prompt.current_version ?? null
 })
-
-type TestRecordType = 'legacy' | 'task'
-type TestRecordStatus = 'completed' | 'failed' | 'running' | 'pending'
-
-interface TestRecordRow {
-  key: string
-  type: TestRecordType
-  taskName: string
-  versionLabel: string
-  modelLabel: string
-  temperature: number | null
-  repetitions: number
-  statusKey: TestRecordStatus
-  statusDisplay: string
-  createdAtDisplay: string
-  createdAtSortValue: number
-  canNavigate: boolean
-  runId?: number
-  taskId?: number
-  disabledReason?: string | null
-}
-
-const testRuns = ref<TestRun[]>([])
-const promptTestTasks = ref<PromptTestTask[]>([])
-const testRunLoading = ref(false)
-const testRunError = ref<string | null>(null)
-
-const testRecords = computed<TestRecordRow[]>(() => {
-  const promptId = currentId.value
-  if (!promptId) return []
-
-  const records: TestRecordRow[] = []
-  const promptDetail = detail.value
-  const versionLabelMap = new Map<number, string>()
-
-  if (promptDetail) {
-    promptDetail.versions.forEach((version) => {
-      versionLabelMap.set(version.id, version.version)
-    })
-  }
-
-  const versionIdSet = new Set<number>()
-  versionLabelMap.forEach((_, id) => {
-    versionIdSet.add(id)
-  })
-
-  testRuns.value.forEach((run) => {
-    if (!isRunRelatedToPrompt(run, promptId, versionIdSet)) {
-      return
-    }
-    records.push(buildLegacyTestRecord(run, versionLabelMap))
-  })
-
-  promptTestTasks.value.forEach((task) => {
-    if (!isTaskRelatedToPrompt(task, promptId, versionIdSet)) {
-      return
-    }
-    records.push(buildPromptTestTaskRecord(task, versionLabelMap))
-  })
-
-  return records.sort((a, b) => b.createdAtSortValue - a.createdAtSortValue)
-})
-
-watch(
-  currentId,
-  () => {
-    void fetchTestRecords()
-  },
-  { immediate: true }
-)
 
 watch(classOptions, (options) => {
   if (!options.length) {
@@ -440,47 +543,25 @@ watch(tagOptions, (options) => {
   selectedTagIds.value = selectedTagIds.value.filter((id) => available.has(id))
 })
 
+watch(
+  currentId,
+  () => {
+    void fetchImplementationLogs()
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
   void fetchMeta()
+  void fetchCollaborators()
 })
 
-const statusTagType = {
-  completed: 'success',
-  failed: 'danger',
-  running: 'warning',
-  pending: 'info'
-} as const
-
-const statusLabel = computed<Record<string, string>>(() => ({
-  completed: t('promptDetail.status.completed'),
-  failed: t('promptDetail.status.failed'),
-  running: t('promptDetail.status.running'),
-  pending: t('promptDetail.status.pending')
-}))
-
-function mapPromptTestTaskStatus(status: string): 'pending' | 'running' | 'completed' | 'failed' {
-  const normalized = typeof status === 'string' ? status.toLowerCase() : ''
-  if (normalized === 'running') return 'running'
-  if (normalized === 'completed') return 'completed'
-  if (normalized === 'failed') return 'failed'
-  return 'pending'
-}
-
-function normalizeLegacyStatus(status: string | null | undefined): TestRecordStatus {
-  const normalized = typeof status === 'string' ? status.toLowerCase() : ''
-  if (normalized === 'completed') return 'completed'
-  if (normalized === 'failed') return 'failed'
-  if (normalized === 'running') return 'running'
-  return 'pending'
-}
-
-function safeDateValue(value: string): number {
-  const time = new Date(value).getTime()
-  if (Number.isNaN(time)) {
-    return 0
+watch(
+  () => currentUser.value,
+  () => {
+    void fetchCollaborators()
   }
-  return time
-}
+)
 
 const canSaveMeta = computed(() => {
   const prompt = detail.value
@@ -496,7 +577,10 @@ const canSaveMeta = computed(() => {
   const tagsChanged =
     originalTags.length !== currentTags.length ||
     originalTags.some((value, index) => value !== currentTags[index])
-  return selectedClassId.value !== originalClassId || tagsChanged
+  const originalAuthor = prompt.author ?? ''
+  const currentAuthor = metaAuthor.value.trim()
+  const authorChanged = currentAuthor !== originalAuthor
+  return selectedClassId.value !== originalClassId || tagsChanged || authorChanged
 })
 
 function extractMetaError(error: unknown): string {
@@ -519,6 +603,38 @@ function extractMetaError(error: unknown): string {
   return t('promptDetail.messages.metaLoadFailed')
 }
 
+function extractShareError(error: unknown): string {
+  if (error && typeof error === 'object' && 'payload' in error) {
+    const payload = (error as { payload?: unknown }).payload
+    if (payload && typeof payload === 'object' && 'detail' in payload) {
+      const detail = (payload as Record<string, unknown>).detail
+      if (typeof detail === 'string' && detail.trim()) {
+        return detail
+      }
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return t('promptDetail.share.loadFailed')
+}
+
+function extractImplementationError(error: unknown): string {
+  if (error && typeof error === 'object' && 'payload' in error) {
+    const payload = (error as { payload?: unknown }).payload
+    if (payload && typeof payload === 'object' && 'detail' in payload) {
+      const detail = (payload as Record<string, unknown>).detail
+      if (typeof detail === 'string' && detail.trim()) {
+        return detail
+      }
+    }
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return t('promptDetail.implementation.loadFailed')
+}
+
 async function fetchMeta() {
   isMetaLoading.value = true
   metaError.value = null
@@ -536,262 +652,168 @@ async function fetchMeta() {
   }
 }
 
-async function fetchTestRecords() {
-  if (!currentId.value) {
-    testRuns.value = []
-    promptTestTasks.value = []
-    testRunError.value = null
+async function fetchShareUserOptions() {
+  const user = currentUser.value
+  if (!user) {
+    shareUserOptions.value = []
     return
   }
-  testRunLoading.value = true
-  testRunError.value = null
+
+  shareUserLoading.value = true
   try {
-    const [runs, tasks] = await Promise.all([
-      listTestRuns({ limit: 200 }),
-      listPromptTestTasks()
-    ])
-    testRuns.value = runs
-    promptTestTasks.value = tasks
+    if (user.is_superuser) {
+      const users = await listUsers({ limit: 200 })
+      shareUserOptions.value = users
+    } else {
+      shareUserOptions.value = [user]
+    }
   } catch (error) {
-    testRunError.value = extractTestRunError(error)
-    testRuns.value = []
-    promptTestTasks.value = []
+    void error
+    shareUserOptions.value = user ? [user] : []
   } finally {
-    testRunLoading.value = false
+    shareUserLoading.value = false
   }
 }
 
-function isRunRelatedToPrompt(
-  run: TestRun,
-  promptId: number,
-  versionIdSet: Set<number>
-): boolean {
-  if (run.prompt?.id === promptId) {
-    return true
-  }
-  if (run.prompt_version?.prompt_id === promptId) {
-    return true
-  }
-  if (typeof run.prompt_version_id === 'number' && versionIdSet.has(run.prompt_version_id)) {
-    return true
-  }
-  return false
-}
+async function fetchCollaborators() {
+  const promptId = currentId.value
+  const prompt = detail.value
 
-function buildLegacyTestRecord(
-  run: TestRun,
-  versionLabelMap: Map<number, string>
-): TestRecordRow {
-  const versionLabel =
-    run.prompt_version?.version ??
-    (typeof run.prompt_version_id === 'number'
-      ? versionLabelMap.get(run.prompt_version_id) ??
-        t('promptDetail.table.versionFallback', { id: run.prompt_version_id })
-      : t('promptDetail.content.versionFallback'))
+  if (!promptId || !prompt || !canManageSharing.value) {
+    collaborators.value = []
+    shareError.value = null
+    return
+  }
 
-  const modelLabel = run.model_name?.trim() || '--'
-  const temperature =
-    typeof run.temperature === 'number' && !Number.isNaN(run.temperature)
-      ? run.temperature
-      : null
-  const repetitions =
-    typeof run.repetitions === 'number' && !Number.isNaN(run.repetitions)
-      ? run.repetitions
-      : 1
-  const statusKey = normalizeLegacyStatus(run.status)
-  const createdAtSource = run.created_at ?? run.updated_at ?? ''
-  const createdAtSortValue = createdAtSource ? safeDateValue(createdAtSource) : 0
-  const createdAtDisplay = createdAtSource ? formatDateTime(createdAtSource) : '--'
-
-  return {
-    key: `legacy-${run.id}`,
-    type: 'legacy',
-    taskName: '--',
-    versionLabel,
-    modelLabel,
-    temperature,
-    repetitions,
-    statusKey,
-    statusDisplay: statusLabel.value[statusKey] ?? statusKey,
-    createdAtDisplay,
-    createdAtSortValue,
-    canNavigate: typeof run.id === 'number' && run.id > 0,
-    runId: run.id
+  collaboratorsLoading.value = true
+  shareError.value = null
+  try {
+    const items = await listPromptCollaborators(promptId)
+    collaborators.value = items
+  } catch (error) {
+    shareError.value = extractShareError(error)
+  } finally {
+    collaboratorsLoading.value = false
   }
 }
 
-function extractRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>
+async function fetchImplementationLogs() {
+  const promptId = currentId.value
+  if (!promptId) {
+    implementationLogs.value = []
+    implementationError.value = null
+    return
   }
-  return {}
+
+  implementationLoading.value = true
+  implementationError.value = null
+  try {
+    const records = await listPromptImplementations(promptId)
+    implementationLogs.value = records
+  } catch (error) {
+    implementationError.value = extractImplementationError(error)
+  } finally {
+    implementationLoading.value = false
+  }
 }
 
-function extractString(value: unknown): string | null {
-  if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed ? trimmed : null
+async function handleShare() {
+  if (shareLoading.value) {
+    return
   }
-  return null
-}
+  const promptId = currentId.value
+  if (!promptId || !canManageSharing.value) {
+    return
+  }
 
-function extractPromptIdsFromConfig(
-  config: Record<string, unknown> | null | undefined
-): number[] {
-  if (!config) {
-    return []
+  const username = shareForm.username.trim()
+  if (!username) {
+    ElMessage.warning(t('promptDetail.share.validation.usernameRequired'))
+    return
   }
-  const record = extractRecord(config)
-  const result: number[] = []
-  const single = record['prompt_id']
-  if (typeof single === 'number' && Number.isFinite(single)) {
-    result.push(single)
-  } else if (typeof single === 'string') {
-    const parsed = Number(single)
-    if (Number.isFinite(parsed)) {
-      result.push(parsed)
-    }
-  }
-  const multiple = record['prompt_ids']
-  if (Array.isArray(multiple)) {
-    multiple.forEach((item) => {
-      const parsed =
-        typeof item === 'number'
-          ? item
-          : typeof item === 'string'
-          ? Number(item)
-          : Number.NaN
-      if (Number.isFinite(parsed)) {
-        result.push(parsed)
-      }
+
+  shareLoading.value = true
+  try {
+    await sharePrompt(promptId, {
+      username,
+      role: shareForm.role
     })
-  }
-  return Array.from(new Set(result))
-}
-
-function isTaskRelatedToPrompt(
-  task: PromptTestTask,
-  promptId: number,
-  versionIdSet: Set<number>
-): boolean {
-  const configIds = extractPromptIdsFromConfig(task.config)
-  if (configIds.includes(promptId)) {
-    return true
-  }
-  const units = Array.isArray(task.units) ? task.units : []
-  if (!units.length) {
-    return false
-  }
-  if (versionIdSet.size > 0) {
-    const match = units.some(
-      (unit) =>
-        typeof unit.prompt_version_id === 'number' && versionIdSet.has(unit.prompt_version_id)
-    )
-    if (match) {
-      return true
-    }
-  }
-  if (typeof task.prompt_version_id === 'number' && versionIdSet.has(task.prompt_version_id)) {
-    return true
-  }
-  return false
-}
-
-function buildPromptTestTaskRecord(
-  task: PromptTestTask,
-  versionLabelMap: Map<number, string>
-): TestRecordRow {
-  const units = Array.isArray(task.units) ? task.units : []
-  const versionLabels = new Set<string>()
-  const modelNames = new Set<string>()
-  const temperatureValues: number[] = []
-  const roundsValues: number[] = []
-
-  units.forEach((unit) => {
-    if (typeof unit.model_name === 'string' && unit.model_name.trim()) {
-      modelNames.add(unit.model_name.trim())
-    }
-    if (typeof unit.temperature === 'number' && !Number.isNaN(unit.temperature)) {
-      temperatureValues.push(unit.temperature)
-    }
-    if (typeof unit.rounds === 'number' && !Number.isNaN(unit.rounds)) {
-      roundsValues.push(unit.rounds)
-    }
-    const extra = extractRecord(unit.extra)
-    const extraLabel = extractString(extra['prompt_version'])
-    if (extraLabel) {
-      versionLabels.add(extraLabel)
-    } else if (typeof unit.prompt_version_id === 'number') {
-      const mapped = versionLabelMap.get(unit.prompt_version_id)
-      versionLabels.add(
-        mapped ?? t('promptDetail.table.versionFallback', { id: unit.prompt_version_id })
-      )
-    }
-  })
-
-  if (!versionLabels.size && typeof task.prompt_version_id === 'number') {
-    const mapped = versionLabelMap.get(task.prompt_version_id)
-    versionLabels.add(
-      mapped ?? t('promptDetail.table.versionFallback', { id: task.prompt_version_id })
-    )
-  }
-
-  const versionLabel = versionLabels.size
-    ? Array.from(versionLabels).join(' / ')
-    : t('promptDetail.content.versionFallback')
-
-  const modelLabel = modelNames.size ? Array.from(modelNames).join(' / ') : '--'
-  const temperature = temperatureValues.length ? temperatureValues[0] : null
-  const repetitions = roundsValues.length ? Math.max(...roundsValues) : 1
-  const statusKey = mapPromptTestTaskStatus(task.status)
-  const createdAtSource = task.created_at ?? task.updated_at ?? ''
-  const createdAtSortValue = createdAtSource ? safeDateValue(createdAtSource) : 0
-  const createdAtDisplay = createdAtSource ? formatDateTime(createdAtSource) : '--'
-  const taskName =
-    typeof task.name === 'string' && task.name.trim() ? task.name.trim() : '--'
-
-  return {
-    key: `task-${task.id}`,
-    type: 'task',
-    taskName,
-    versionLabel,
-    modelLabel,
-    temperature,
-    repetitions,
-    statusKey,
-    statusDisplay: statusLabel.value[statusKey] ?? statusKey,
-    createdAtDisplay,
-    createdAtSortValue,
-    canNavigate: typeof task.id === 'number' && task.id > 0,
-    taskId: task.id
+    ElMessage.success(t('promptDetail.share.shareSuccess'))
+    shareDialogVisible.value = false
+    await fetchCollaborators()
+  } catch (error) {
+    const message = extractShareError(error)
+    ElMessage.error(message)
+  } finally {
+    shareLoading.value = false
   }
 }
 
+async function handleRevokeCollaborator(target: PromptCollaborator) {
+  if (revokeLoadingId.value !== null) {
+    return
+  }
+  const promptId = currentId.value
+  if (!promptId || !canManageSharing.value) {
+    return
+  }
+
+  revokeLoadingId.value = target.user_id
+  try {
+    await revokePromptShare(promptId, target.user_id)
+    ElMessage.success(t('promptDetail.share.revokeSuccess', { name: target.username }))
+    collaborators.value = collaborators.value.filter((item) => item.user_id !== target.user_id)
+  } catch (error) {
+    const message = extractShareError(error)
+    ElMessage.error(message)
+  } finally {
+    revokeLoadingId.value = null
+  }
+}
+
+async function handleSaveImplementation() {
+  if (implementationSaving.value) {
+    return
+  }
+
+  const promptId = currentId.value
+  const content = implementationContent.value.trim()
+
+  if (!promptId) {
+    return
+  }
+
+  if (!content) {
+    ElMessage.warning(t('promptDetail.implementation.validation.contentRequired'))
+    return
+  }
+
+  implementationSaving.value = true
+  implementationError.value = null
+  try {
+    const record = await createPromptImplementation(promptId, { content })
+    implementationContent.value = ''
+    implementationLogs.value = [record, ...implementationLogs.value]
+    ElMessage.success(t('promptDetail.implementation.saveSuccess'))
+  } catch (error) {
+    const message = extractImplementationError(error)
+    implementationError.value = message
+    ElMessage.error(message)
+  } finally {
+    implementationSaving.value = false
+  }
+}
 function resetMetaSelections() {
   const prompt = detail.value
   if (!prompt) {
     selectedClassId.value = null
     selectedTagIds.value = []
+    metaAuthor.value = ''
     return
   }
   selectedClassId.value = prompt.prompt_class.id
   selectedTagIds.value = prompt.tags.map((tag) => tag.id)
-}
-
-function extractTestRunError(error: unknown): string {
-  if (error && typeof error === 'object' && 'payload' in error) {
-    const payload = (error as { payload?: unknown }).payload
-    if (payload && typeof payload === 'object' && 'detail' in payload) {
-      const detail = (payload as Record<string, unknown>).detail
-      if (typeof detail === 'string' && detail.trim()) {
-        return detail
-      }
-    }
-  }
-  if (error instanceof Error && error.message) {
-    return error.message
-  }
-  return t('promptDetail.messages.testLoadFailed')
+  metaAuthor.value = prompt.author ?? ''
 }
 
 async function handleSaveMeta() {
@@ -809,11 +831,19 @@ async function handleSaveMeta() {
   }
   isMetaSaving.value = true
   try {
-    await updatePrompt(prompt.id, {
+    const payload: Record<string, unknown> = {
       class_id: selectedClassId.value,
       tag_ids: selectedTagIds.value
-    })
+    }
+    const originalAuthor = prompt.author ?? ''
+    const currentAuthor = metaAuthor.value.trim()
+    if (currentAuthor !== originalAuthor) {
+      payload.author = currentAuthor || null
+    }
+
+    await updatePrompt(prompt.id, payload)
     ElMessage.success(t('promptDetail.messages.updateSuccess'))
+    closeMetaDialog()
     await refreshDetail()
     await fetchMeta()
   } catch (error) {
@@ -826,10 +856,18 @@ async function handleSaveMeta() {
 function openMetaDialog() {
   metaDialogVisible.value = true
   resetMetaSelections()
+  void fetchShareUserOptions()
 }
 
 function closeMetaDialog() {
   metaDialogVisible.value = false
+}
+
+function openShareDialog() {
+  shareForm.username = ''
+  shareForm.role = 'viewer'
+  shareDialogVisible.value = true
+  void fetchShareUserOptions()
 }
 
 const dateTimeFormatter = computed(
@@ -843,14 +881,6 @@ const dateTimeFormatter = computed(
       hour12: false
     })
 )
-
-function formatTemperature(value: number | null | undefined) {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return '--'
-  }
-  return value.toFixed(2)
-}
-
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
     return '--'
@@ -918,36 +948,6 @@ function handleCreateVersion() {
   if (!currentId.value) return
   router.push({ name: 'prompt-version-create', params: { id: currentId.value } })
 }
-
-function handleCreateTest() {
-  if (!currentId.value) return
-  const query: Record<string, string> = { promptId: String(currentId.value) }
-  if (selectedVersionId.value) {
-    query.promptVersionIds = String(selectedVersionId.value)
-  }
-  router.push({ name: 'prompt-test-task-create', query })
-}
-
-function handleViewTestRecord(record: TestRecordRow) {
-  if (!record.canNavigate) {
-    ElMessage.warning(t('promptDetail.messages.testUnavailable'))
-    return
-  }
-  if (record.type === 'task' && record.taskId) {
-    void router
-      .push({ name: 'prompt-test-task-result', params: { taskId: String(record.taskId) } })
-      .catch(() => {})
-    return
-  }
-  if (record.runId) {
-    void router
-      .push({ name: 'test-job-result', params: { id: record.runId } })
-      .catch(() => {})
-    return
-  }
-  ElMessage.warning(t('promptDetail.messages.testUnavailable'))
-}
-
 function goHome() {
   router.push({ name: 'prompt-management' })
 }
@@ -1030,6 +1030,36 @@ function goHome() {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.info-share {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-share__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.info-share__title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.share-alert {
+  margin-bottom: 4px;
+}
+
+.share-form {
+  margin-top: 8px;
+}
+
+.share-table :deep(.el-table__cell) {
+  font-size: 13px;
 }
 
 .info-tags :deep(.el-button.is-link) {
@@ -1224,6 +1254,72 @@ function goHome() {
 
 .history-date {
   font-size: 12px;
+}
+
+.implementation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.implementation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.implementation-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.implementation-subtitle {
+  font-size: 13px;
+  color: var(--text-weak-color);
+}
+
+.implementation-form {
+  margin-top: 8px;
+}
+
+.implementation-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.implementation-alert {
+  margin-bottom: 8px;
+}
+
+.implementation-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.implementation-log-item {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--side-border-color);
+  background: var(--content-bg-color);
+}
+
+.implementation-log-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-weak-color);
+  margin-bottom: 4px;
+}
+
+.implementation-log-content {
+  margin: 0;
+  font-size: 13px;
+  color: var(--header-text-color);
+  white-space: pre-wrap;
+  line-height: 1.5;
 }
 
 .test-card {

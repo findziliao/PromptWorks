@@ -81,16 +81,18 @@ def upgrade() -> None:
         "ix_prompts_versions_prompt_id", "prompts_versions", ["prompt_id"], unique=False
     )
 
-    result = connection.execute(
+    connection.execute(
         sa.text(
-            "INSERT INTO prompts_class (name, description) VALUES (:name, :description) RETURNING id"
+            "INSERT INTO prompts_class (name, description) VALUES (:name, :description)"
         ),
         {
             "name": "默认分类",
             "description": "迁移自动创建的默认分类",
         },
     )
-    default_class_id = result.scalar_one()
+    # 获取刚刚插入的 ID
+    result = connection.execute(sa.text("SELECT last_insert_id()"))
+    default_class_id = result.scalar()
 
     connection.execute(
         sa.text("UPDATE prompts SET class_id = :class_id"),
@@ -111,9 +113,8 @@ def upgrade() -> None:
         sa.text(
             """
             UPDATE prompts p
-            SET current_version_id = pv.id
-            FROM prompts_versions pv
-            WHERE pv.prompt_id = p.id AND pv.version = p.version
+            JOIN prompts_versions pv ON pv.prompt_id = p.id AND pv.version = p.version
+            SET p.current_version_id = pv.id
             """
         )
     )
@@ -138,15 +139,19 @@ def upgrade() -> None:
     )
 
     op.drop_constraint("test_runs_prompt_id_fkey", "test_runs", type_="foreignkey")
-    op.alter_column("test_runs", "prompt_id", new_column_name="prompt_version_id")
+    op.alter_column(
+        "test_runs",
+        "prompt_id",
+        new_column_name="prompt_version_id",
+        existing_type=sa.Integer(),
+    )
 
     connection.execute(
         sa.text(
             """
             UPDATE test_runs tr
-            SET prompt_version_id = pv.id
-            FROM prompts_versions pv
-            WHERE pv.prompt_id = tr.prompt_version_id
+            JOIN prompts_versions pv ON pv.prompt_id = tr.prompt_version_id
+            SET tr.prompt_version_id = pv.id
             """
         )
     )
@@ -187,10 +192,9 @@ def downgrade() -> None:
         sa.text(
             """
             UPDATE prompts p
-            SET version = pv.version,
-                content = pv.content
-            FROM prompts_versions pv
-            WHERE pv.id = p.current_version_id
+            JOIN prompts_versions pv ON pv.id = p.current_version_id
+            SET p.version = pv.version,
+                p.content = pv.content
             """
         )
     )
@@ -203,9 +207,8 @@ def downgrade() -> None:
         sa.text(
             """
             UPDATE test_runs tr
-            SET prompt_version_id = pv.prompt_id
-            FROM prompts_versions pv
-            WHERE pv.id = tr.prompt_version_id
+            JOIN prompts_versions pv ON pv.id = tr.prompt_version_id
+            SET tr.prompt_version_id = pv.prompt_id
             """
         )
     )

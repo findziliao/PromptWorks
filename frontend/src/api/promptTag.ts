@@ -19,6 +19,11 @@ export interface PromptTagCreatePayload {
   color: string
 }
 
+export interface PromptTagUpdatePayload {
+  name?: string
+  color?: string
+}
+
 export async function listPromptTags(): Promise<PromptTagListResponse> {
   return request<PromptTagListResponse>('/prompt-tags')
 }
@@ -33,5 +38,12 @@ export async function createPromptTag(payload: PromptTagCreatePayload) {
 export async function deletePromptTag(tagId: number) {
   await request<void>(`/prompt-tags/${tagId}`, {
     method: 'DELETE'
+  })
+}
+
+export async function updatePromptTag(tagId: number, payload: PromptTagUpdatePayload) {
+  return request<PromptTagStats>(`/prompt-tags/${tagId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
   })
 }

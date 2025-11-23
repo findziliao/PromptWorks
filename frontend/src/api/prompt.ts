@@ -1,5 +1,10 @@
 import { request, type HttpError } from './http'
-import type { Prompt, PromptVersion } from '../types/prompt'
+import type {
+  Prompt,
+  PromptCollaborator,
+  PromptVersion,
+  PromptImplementationRecord
+} from '../types/prompt'
 
 export interface PromptListParams {
   q?: string
@@ -30,6 +35,15 @@ export interface PromptUpdatePayload {
   content?: string | null
   activate_version_id?: number | null
   tag_ids?: number[] | null
+}
+
+export interface PromptSharePayload {
+  username: string
+  role: 'viewer' | 'editor'
+}
+
+export interface PromptImplementationCreatePayload {
+  content: string
 }
 
 export async function listPrompts(params: PromptListParams = {}): Promise<Prompt[]> {
@@ -82,6 +96,42 @@ export async function switchPromptVersion(
   version: PromptVersion
 ): Promise<Prompt> {
   return updatePrompt(promptId, { activate_version_id: version.id })
+}
+
+export async function listPromptCollaborators(promptId: number): Promise<PromptCollaborator[]> {
+  return request<PromptCollaborator[]>(`/prompts/${promptId}/collaborators`)
+}
+
+export async function sharePrompt(
+  promptId: number,
+  payload: PromptSharePayload
+): Promise<PromptCollaborator> {
+  return request<PromptCollaborator>(`/prompts/${promptId}/share`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+}
+
+export async function revokePromptShare(promptId: number, userId: number): Promise<void> {
+  await request<void>(`/prompts/${promptId}/share/${userId}`, {
+    method: 'DELETE'
+  })
+}
+
+export async function listPromptImplementations(
+  promptId: number
+): Promise<PromptImplementationRecord[]> {
+  return request<PromptImplementationRecord[]>(`/prompts/${promptId}/implementations`)
+}
+
+export async function createPromptImplementation(
+  promptId: number,
+  payload: PromptImplementationCreatePayload
+): Promise<PromptImplementationRecord> {
+  return request<PromptImplementationRecord>(`/prompts/${promptId}/implementations`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
 }
 
 export type { HttpError }

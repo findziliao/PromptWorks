@@ -7,15 +7,30 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.security import create_access_token, get_password_hash
 from app.core.task_queue import task_queue
 from app.models.result import Result
 from app.models.usage import LLMUsageLog
+from app.models.user import User
 from app.services.test_run import TestRunExecutionError
 
 
-def _create_prompt(client: TestClient) -> dict[str, Any]:
+def _auth_headers(db_session: Session, username: str = "test-runner") -> dict[str, str]:
+    user = db_session.query(User).filter_by(username=username).first()
+    if user is None:
+        user = User(username=username, hashed_password=get_password_hash("test-pass"))
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+    token = create_access_token({"sub": str(user.id)})
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _create_prompt(client: TestClient, db_session: Session) -> dict[str, Any]:
+    headers = _auth_headers(db_session)
     response = client.post(
         "/api/v1/prompts/",
+        headers=headers,
         json={
             "name": "对话助手",
             "version": "v1",
@@ -132,7 +147,7 @@ def test_create_and_retrieve_test_prompt(
 
     monkeypatch.setattr("app.services.test_run._invoke_llm_once", fake_invoke)
 
-    prompt_payload = _create_prompt(client)
+    prompt_payload = _create_prompt(client, db_session)
     prompt_version_id = prompt_payload["current_version"]["id"]
 
     create_resp = client.post(
@@ -232,8 +247,10 @@ def test_create_and_retrieve_test_prompt(
     assert all(log.model_name == model["name"] for log in usage_logs)
 
 
-def test_create_test_prompt_handles_service_error(client: TestClient, monkeypatch):
-    prompt_payload = _create_prompt(client)
+def test_create_test_prompt_handles_service_error(
+    client: TestClient, db_session: Session, monkeypatch
+) -> None:
+    prompt_payload = _create_prompt(client, db_session)
     prompt_version_id = prompt_payload["current_version"]["id"]
 
     def raise_error(*_, **__):
@@ -263,8 +280,10 @@ def test_create_test_prompt_handles_service_error(client: TestClient, monkeypatc
     assert detail["schema"].get("last_error") == "执行失败"
 
 
-def test_retry_failed_test_prompt(client: TestClient, monkeypatch):
-    prompt_payload = _create_prompt(client)
+def test_retry_failed_test_prompt(
+    client: TestClient, db_session: Session, monkeypatch
+) -> None:
+    prompt_payload = _create_prompt(client, db_session)
     prompt_version_id = prompt_payload["current_version"]["id"]
 
     call_count = {"value": 0}
@@ -319,9 +338,11 @@ def test_retry_failed_test_prompt(client: TestClient, monkeypatch):
     assert final_schema.get("last_error") is None
 
 
-def test_partial_failure_keeps_results(client: TestClient, monkeypatch):
+def test_partial_failure_keeps_results(
+    client: TestClient, db_session: Session, monkeypatch
+) -> None:
     provider, model = _create_provider_with_model(client)
-    prompt_payload = _create_prompt(client)
+    prompt_payload = _create_prompt(client, db_session)
     prompt_version_id = prompt_payload["current_version"]["id"]
 
     def fake_invoke(
@@ -411,8 +432,10 @@ def test_partial_failure_keeps_results(client: TestClient, monkeypatch):
     assert len(results_resp.json()) == 1
 
 
-def test_update_test_prompt_allows_partial_fields(client: TestClient, monkeypatch):
-    prompt_payload = _create_prompt(client)
+def test_update_test_prompt_allows_partial_fields(
+    client: TestClient, db_session: Session, monkeypatch
+) -> None:
+    prompt_payload = _create_prompt(client, db_session)
     prompt_version_id = prompt_payload["current_version"]["id"]
 
     def fake_execute(db, test_run):

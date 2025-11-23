@@ -1,17 +1,18 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: promptworks-postgres
+  mysql:
+    image: mysql:8.0
+    container_name: promptworks-mysql
     environment:
-      POSTGRES_DB: promptworks
-      POSTGRES_USER: promptworks
-      POSTGRES_PASSWORD: promptworks
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: promptworks
+      MYSQL_USER: promptworks
+      MYSQL_PASSWORD: promptworks
     ports:
-      - "15432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U promptworks -d promptworks"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "promptworks", "-ppromptworks"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -38,12 +39,12 @@ services:
       APP_TEST_MODE: "false"
       API_V1_STR: /api/v1
       PROJECT_NAME: PromptWorks
-      DATABASE_URL: postgresql+psycopg://promptworks:promptworks@postgres:5432/promptworks
+      DATABASE_URL: mysql+pymysql://promptworks:promptworks@mysql:3306/promptworks
       REDIS_URL: redis://redis:6379/0
       BACKEND_CORS_ORIGINS: '["http://localhost:18080"]'
       BACKEND_CORS_ALLOW_CREDENTIALS: "true"
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -60,5 +61,5 @@ services:
       - "18080:80"
 
 volumes:
-  postgres_data:
+  mysql_data:
   redis_data:

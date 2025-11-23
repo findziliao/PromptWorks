@@ -9,6 +9,7 @@ export const messages = {
       save: '保存',
       create: '新建',
       edit: '编辑',
+      view: '查看',
       descriptionNone: '暂无描述',
       notEnabled: '未启用'
     },
@@ -31,6 +32,37 @@ export const messages = {
       settingsNeverUpdated: '尚未设置超时时间',
       settingsLastUpdated: '上次更新时间：{time}'
     },
+    auth: {
+      title: '账号登录',
+      subtitle: '使用用户名和密码登录 PromptWorks',
+      tabs: {
+        login: '登录',
+        signup: '注册'
+      },
+      fields: {
+        username: '用户名',
+        password: '密码',
+        confirmPassword: '确认密码'
+      },
+      placeholders: {
+        username: '请输入用户名',
+        password: '请输入密码',
+        confirmPassword: '请再次输入密码'
+      },
+      actions: {
+        login: '登录',
+        signup: '注册',
+        logout: '退出登录'
+      },
+      validation: {
+        usernameRequired: '请输入用户名',
+        usernameLength: '用户名长度需在 3~50 个字符之间',
+        passwordRequired: '请输入密码',
+        passwordLength: '密码长度需在 6~128 个字符之间',
+        confirmPasswordRequired: '请再次输入密码',
+        confirmPasswordMismatch: '两次输入的密码不一致'
+      }
+    },
     menu: {
       prompt: 'Prompt 管理',
       quickTest: '快速测试',
@@ -38,7 +70,8 @@ export const messages = {
       class: '分类管理',
       tag: '标签管理',
       llm: 'LLMs 管理',
-      usage: '用量管理'
+      usage: '用量管理',
+      user: '用户管理'
     },
     promptManagement: {
       headerTitle: 'Prompt 管理',
@@ -56,6 +89,7 @@ export const messages = {
       author: '作者',
       createdAt: '创建时间',
       updatedAt: '更新时间',
+      completedAt: '完成时间',
       confirmDelete: '确认删除「{name}」吗？',
       confirm: '确认',
       delete: '删除',
@@ -63,6 +97,25 @@ export const messages = {
       emptyDescription: '暂无 Prompt 数据，请点击右上角新建',
       dialogTitle: '新建 Prompt',
       dialogAlert: '当前还没有可用分类，请先在“分类管理”中新增分类。',
+      aiHelper: {
+        panelTitle: 'AI 自动生成',
+        description: '可以通过 AI 自动生成标题、描述与内容，生成后可继续手动调整。',
+        modelLabel: '选择模型',
+        modelPlaceholder: '请选择要使用的模型',
+        promptLabel: '请用自然语言描述这个 Prompt 的用途',
+        promptPlaceholder: '例如：给客服团队使用的对话模板，用于总结用户问题并生成后续跟进建议……',
+        noProvider: '当前尚未配置可用的 LLM 提供方和模型，请先在「LLMs 管理」中添加。',
+        noModelWarning: '暂未找到包含模型的 LLM 提供方，请先在「LLMs 管理」中添加模型。',
+        loadProviderFailed: '加载 LLM 提供方失败，稍后重试或检查网络配置。',
+        noProviderShort: '暂未找到可用的模型，请先完成 LLM 配置。',
+        descriptionRequired: '请先输入要生成的 Prompt 功能描述。',
+        generate: '生成并填充',
+        reset: '清空描述',
+        emptyResponse: 'AI 返回内容为空，暂时无法生成草稿。',
+        parseFailed: 'AI 返回的内容不是有效的 JSON，无法自动填充，请稍后重试。',
+        applySuccess: '已根据 AI 建议填充表单，请检查后再提交。',
+        invokeFailed: '调用 AI 生成提示词失败，请稍后重试。'
+      },
       form: {
         title: '标题',
         titlePlaceholder: '请输入 Prompt 标题',
@@ -164,13 +217,16 @@ export const messages = {
         nameRequired: '请填写标签名称',
         createSuccess: '标签创建成功',
         createFailed: '创建标签失败，请稍后重试',
+         updateSuccess: '标签更新成功',
+         updateFailed: '更新标签失败，请稍后重试',
         deleteConfirmTitle: '删除确认',
         deleteConfirmMessage: '确认删除标签“{name}”并解除关联？',
         confirmDelete: '确认删除',
         deleteSuccess: '标签已删除',
         deleteFailed: '删除标签失败，请稍后重试',
         deleteBlocked: '仍有关联 Prompt 使用该标签，请先迁移或删除后再尝试'
-      }
+      },
+      editDialogTitle: '编辑标签'
     },
     quickTest: {
       headerTitle: '快速测试',
@@ -277,6 +333,64 @@ export const messages = {
         versionRequired: '请输入版本标签',
         createPromptVersionSuccess: '已创建新的 Prompt 版本',
         savePromptFailed: '保存 Prompt 失败'
+      }
+    },
+    userManagement: {
+      headerTitle: '用户管理',
+      headerDescription: '查看系统用户并管理角色与禁用状态，仅管理员可见。',
+      searchPlaceholder: '按用户名搜索',
+      searchButton: '搜索',
+      createButton: '新建用户',
+      createDialogTitle: '新建用户',
+      createConfirm: '创建',
+      form: {
+        username: '用户名',
+        usernamePlaceholder: '请输入用户名',
+        password: '密码',
+        passwordPlaceholder: '请输入密码（至少 6 位）',
+        confirmPassword: '确认密码',
+        confirmPasswordPlaceholder: '请再次输入密码'
+      },
+      noPermissionTitle: '没有访问权限',
+      noPermissionSubtitle: '仅管理员可以访问用户管理页面。',
+      backToHome: '返回首页',
+      columns: {
+        id: 'ID',
+        username: '用户名',
+        role: '角色',
+        active: '启用',
+        admin: '管理员',
+        createdAt: '创建时间',
+        updatedAt: '更新时间',
+        actions: '操作'
+      },
+      actions: {
+        edit: '编辑',
+        delete: '删除',
+        deleteConfirm: '确认删除'
+      },
+      roles: {
+        admin: '管理员',
+        user: '普通用户'
+      },
+      messages: {
+        loadFailed: '加载用户列表失败，请稍后重试',
+        updateSuccess: '用户信息已更新',
+        usernameRequired: '请输入用户名',
+        passwordInvalid: '请输入至少 6 位的密码',
+        confirmPasswordMismatch: '两次输入的密码不一致',
+        createSuccess: '新用户创建成功',
+        deleteConfirm: '确认删除用户「{username}」？此操作不可恢复。',
+        deleteSuccess: '用户已删除',
+        deleteFailed: '删除用户失败，请稍后重试'
+      },
+      editDialogTitle: '编辑用户',
+      editConfirm: '保存',
+      editForm: {
+        password: '新密码',
+        passwordPlaceholder: '如需重置密码，请输入新密码（至少 6 位）',
+        confirmPassword: '确认新密码',
+        confirmPasswordPlaceholder: '请再次输入新密码'
       }
     },
     testJobManagement: {
@@ -559,9 +673,11 @@ export const messages = {
           classDescription: '分类描述',
           classDescriptionFallback: '暂无说明'
         },
-        editButton: '编辑分类与标签',
-        dialogTitle: '编辑分类与标签',
+        editButton: '编辑作者 / 分类 / 标签',
+        dialogTitle: '编辑作者 / 分类 / 标签',
         dialog: {
+          authorLabel: '作者',
+          authorPlaceholder: '请输入作者（可选）',
           classLabel: '分类',
           classPlaceholder: '请选择分类',
           noClassTip: '暂无分类，请先在“分类管理”中创建',
@@ -588,6 +704,21 @@ export const messages = {
         empty: '暂无版本内容',
         historyTitle: '历史版本'
       },
+      implementation: {
+        title: 'Prompt 实施',
+        subtitle: '记录 Prompt 在线实施过程中的情况、效果与问题。',
+        field: {
+          label: '实施记录',
+          placeholder: '请输入本次实施的情况、效果或发现的问题，支持多行。'
+        },
+        saveButton: '保存实施记录',
+        empty: '当前暂无实施记录',
+        loadFailed: '加载实施记录失败',
+        saveSuccess: '实施记录已保存',
+        validation: {
+          contentRequired: '请输入要保存的实施记录内容'
+        }
+      },
       test: {
         title: 'Prompt 测试记录',
         subtitle: '记录历史测试结果，支持快速备案',
@@ -605,10 +736,42 @@ export const messages = {
         },
         viewResult: '查看结果'
       },
+      share: {
+        title: '协作者',
+        addButton: '添加协作者',
+        empty: '当前没有协作者，可通过用户名分享',
+        revoke: '取消共享',
+        dialogTitle: '分享给其他用户',
+        dialogConfirm: '确认分享',
+        fields: {
+          username: '用户名',
+          role: '权限'
+        },
+        placeholders: {
+          username: '请输入要分享给的用户名'
+        },
+        columns: {
+          username: '用户名',
+          role: '权限',
+          createdAt: '添加时间',
+          actions: '操作'
+        },
+        roles: {
+          viewer: '只读',
+          editor: '可编辑'
+        },
+        validation: {
+          usernameRequired: '请输入要分享给的用户名'
+        },
+        confirmRevoke: '确定取消用户「{name}」的访问权限吗？',
+        shareSuccess: '已更新协作者权限',
+        revokeSuccess: '已移除协作者「{name}」',
+        loadFailed: '加载协作者列表失败'
+      },
       messages: {
         classRequired: '请选择分类',
-        noChange: '分类与标签未发生变化',
-        updateSuccess: '分类与标签已更新',
+        noChange: '作者、分类与标签未发生变化',
+        updateSuccess: '作者、分类与标签已更新',
         metaNotFound: '分类或标签数据未找到',
         metaLoadFailed: '加载分类或标签数据失败',
         testLoadFailed: '加载测试记录失败',
@@ -1055,6 +1218,7 @@ export const messages = {
       save: 'Save',
       create: 'Create',
       edit: 'Edit',
+      view: 'View',
       descriptionNone: 'No description',
       notEnabled: 'Not enabled'
     },
@@ -1077,6 +1241,37 @@ export const messages = {
       settingsNeverUpdated: 'Timeout not configured yet',
       settingsLastUpdated: 'Last updated at: {time}'
     },
+    auth: {
+      title: 'Sign in',
+      subtitle: 'Use your username and password to access PromptWorks.',
+      tabs: {
+        login: 'Login',
+        signup: 'Sign Up'
+      },
+      fields: {
+        username: 'Username',
+        password: 'Password',
+        confirmPassword: 'Confirm Password'
+      },
+      placeholders: {
+        username: 'Enter username',
+        password: 'Enter password',
+        confirmPassword: 'Re-enter password'
+      },
+      actions: {
+        login: 'Login',
+        signup: 'Sign Up',
+        logout: 'Logout'
+      },
+      validation: {
+        usernameRequired: 'Please enter a username.',
+        usernameLength: 'Username must be between 3 and 50 characters.',
+        passwordRequired: 'Please enter a password.',
+        passwordLength: 'Password must be between 6 and 128 characters.',
+        confirmPasswordRequired: 'Please confirm your password.',
+        confirmPasswordMismatch: 'The two passwords do not match.'
+      }
+    },
     menu: {
       prompt: 'Prompt Management',
       quickTest: 'Quick Test',
@@ -1084,7 +1279,8 @@ export const messages = {
       class: 'Class Management',
       tag: 'Tag Management',
       llm: 'LLM Management',
-      usage: 'Usage Management'
+      usage: 'Usage Management',
+      user: 'User Management'
     },
     promptManagement: {
       headerTitle: 'Prompt Management',
@@ -1102,6 +1298,7 @@ export const messages = {
       author: 'Author',
       createdAt: 'Created At',
       updatedAt: 'Updated At',
+      completedAt: 'Completed At',
       confirmDelete: 'Delete “{name}”?',
       confirm: 'Confirm',
       delete: 'Delete',
@@ -1109,6 +1306,25 @@ export const messages = {
       emptyDescription: 'No prompt data yet. Click “New Prompt” to create.',
       dialogTitle: 'New Prompt',
       dialogAlert: 'No class available. Please create one under “Class Management”.',
+      aiHelper: {
+        panelTitle: 'AI Assist',
+        description: 'Use AI to draft the title, description, and content, then refine manually as needed.',
+        modelLabel: 'Model',
+        modelPlaceholder: 'Select a model to use',
+        promptLabel: 'Describe the purpose and behavior of this prompt',
+        promptPlaceholder: 'For example: a prompt for the support team to summarize user issues and propose follow-up suggestions…',
+        noProvider: 'No LLM provider with models is configured. Please add one under “LLM Management” first.',
+        noModelWarning: 'No provider with models found. Please add models under “LLM Management” first.',
+        loadProviderFailed: 'Failed to load LLM providers. Please try again later.',
+        noProviderShort: 'No usable model found. Please complete LLM configuration first.',
+        descriptionRequired: 'Please enter a description of the prompt you want to generate.',
+        generate: 'Generate and Apply',
+        reset: 'Clear',
+        emptyResponse: 'AI returned empty content. Unable to generate a draft.',
+        parseFailed: 'AI response is not valid JSON. Cannot auto-fill fields.',
+        applySuccess: 'Form has been filled based on AI suggestion. Please review before submitting.',
+        invokeFailed: 'Failed to call AI to generate prompt. Please try again later.'
+      },
       form: {
         title: 'Title',
         titlePlaceholder: 'Enter prompt title',
@@ -1210,13 +1426,16 @@ export const messages = {
         nameRequired: 'Please provide a tag name.',
         createSuccess: 'Tag created successfully.',
         createFailed: 'Failed to create tag. Please try again later.',
+        updateSuccess: 'Tag updated successfully.',
+        updateFailed: 'Failed to update tag. Please try again later.',
         deleteConfirmTitle: 'Delete Confirmation',
         deleteConfirmMessage: 'Delete tag “{name}” and detach from prompts?',
         confirmDelete: 'Delete',
         deleteSuccess: 'Tag deleted.',
         deleteFailed: 'Failed to delete tag. Please try again later.',
         deleteBlocked: 'Some prompts still use this tag. Please migrate or remove them first.'
-      }
+      },
+      editDialogTitle: 'Edit Tag'
     },
     quickTest: {
       headerTitle: 'Quick Test',
@@ -1323,6 +1542,64 @@ export const messages = {
         versionRequired: 'Enter a version tag.',
         createPromptVersionSuccess: 'New prompt version created.',
         savePromptFailed: 'Failed to save prompt.'
+      }
+    },
+    userManagement: {
+      headerTitle: 'User Management',
+      headerDescription: 'View system users and manage roles and active status. Admin only.',
+      searchPlaceholder: 'Search by username',
+      searchButton: 'Search',
+      createButton: 'New User',
+      createDialogTitle: 'New User',
+      createConfirm: 'Create',
+      form: {
+        username: 'Username',
+        usernamePlaceholder: 'Enter username',
+        password: 'Password',
+        passwordPlaceholder: 'Enter password (min 6 characters)',
+        confirmPassword: 'Confirm Password',
+        confirmPasswordPlaceholder: 'Re-enter password'
+      },
+      noPermissionTitle: 'Access denied',
+      noPermissionSubtitle: 'Only administrators can access the user management page.',
+      backToHome: 'Back to Home',
+      columns: {
+        id: 'ID',
+        username: 'Username',
+        role: 'Role',
+        active: 'Active',
+        admin: 'Admin',
+        createdAt: 'Created At',
+        updatedAt: 'Updated At',
+        actions: 'Actions'
+      },
+      actions: {
+        edit: 'Edit',
+        delete: 'Delete',
+        deleteConfirm: 'Delete'
+      },
+      roles: {
+        admin: 'Admin',
+        user: 'User'
+      },
+      messages: {
+        loadFailed: 'Failed to load users. Please try again later.',
+        updateSuccess: 'User updated successfully.',
+        usernameRequired: 'Please enter a username.',
+        passwordInvalid: 'Please enter a password of at least 6 characters.',
+        confirmPasswordMismatch: 'The two passwords do not match.',
+        createSuccess: 'User created successfully.',
+        deleteConfirm: 'Delete user “{username}”? This action cannot be undone.',
+        deleteSuccess: 'User deleted successfully.',
+        deleteFailed: 'Failed to delete user. Please try again later.'
+      },
+      editDialogTitle: 'Edit User',
+      editConfirm: 'Save',
+      editForm: {
+        password: 'New Password',
+        passwordPlaceholder: 'Enter a new password (min 6 characters) to reset.',
+        confirmPassword: 'Confirm New Password',
+        confirmPasswordPlaceholder: 'Re-enter the new password'
       }
     },
     testJobManagement: {
@@ -1605,9 +1882,11 @@ export const messages = {
           classDescription: 'Category Description',
           classDescriptionFallback: 'No additional notes'
         },
-        editButton: 'Edit category & tags',
-        dialogTitle: 'Edit category & tags',
+        editButton: 'Edit author / category / tags',
+        dialogTitle: 'Edit author / category / tags',
         dialog: {
+          authorLabel: 'Author',
+          authorPlaceholder: 'Enter author (optional)',
           classLabel: 'Category',
           classPlaceholder: 'Choose a category',
           noClassTip: 'No category available yet. Create one under “Class Management”.',
@@ -1634,6 +1913,21 @@ export const messages = {
         empty: 'No content for this version yet.',
         historyTitle: 'Version History'
       },
+      implementation: {
+        title: 'Prompt Implementation',
+        subtitle: 'Record how this prompt is implemented and performs in real scenarios.',
+        field: {
+          label: 'Implementation Log',
+          placeholder: 'Describe this rollout: scenario, outcome, issues, etc. (multi-line supported).'
+        },
+        saveButton: 'Save Log',
+        empty: 'No implementation logs yet.',
+        loadFailed: 'Failed to load implementation logs.',
+        saveSuccess: 'Implementation log saved.',
+        validation: {
+          contentRequired: 'Please enter the log content before saving.'
+        }
+      },
       test: {
         title: 'Prompt Test Records',
         subtitle: 'Track historical test runs for quick reference.',
@@ -1651,10 +1945,42 @@ export const messages = {
         },
         viewResult: 'View Result'
       },
+      share: {
+        title: 'Collaborators',
+        addButton: 'Add collaborator',
+        empty: 'No collaborators yet. Share by username.',
+        revoke: 'Revoke access',
+        dialogTitle: 'Share with another user',
+        dialogConfirm: 'Confirm',
+        fields: {
+          username: 'Username',
+          role: 'Permission'
+        },
+        placeholders: {
+          username: 'Enter the username to share with'
+        },
+        columns: {
+          username: 'Username',
+          role: 'Permission',
+          createdAt: 'Added At',
+          actions: 'Actions'
+        },
+        roles: {
+          viewer: 'Viewer',
+          editor: 'Editor'
+        },
+        validation: {
+          usernameRequired: 'Please enter the target username.'
+        },
+        confirmRevoke: 'Revoke access for “{name}”?',
+        shareSuccess: 'Collaborator permissions updated.',
+        revokeSuccess: 'Access revoked for “{name}”.',
+        loadFailed: 'Failed to load collaborators.'
+      },
       messages: {
         classRequired: 'Select a category first.',
-        noChange: 'No changes detected for category or tags.',
-        updateSuccess: 'Category and tags updated.',
+        noChange: 'No changes detected for author, category, or tags.',
+        updateSuccess: 'Author, category, and tags updated.',
         metaNotFound: 'Category or tag information not found.',
         metaLoadFailed: 'Failed to load category or tag data.',
         testLoadFailed: 'Failed to load test records.',
