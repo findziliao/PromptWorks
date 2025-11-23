@@ -41,7 +41,7 @@ services:
       PROJECT_NAME: PromptWorks
       DATABASE_URL: mysql+pymysql://promptworks:promptworks@mysql:3306/promptworks
       REDIS_URL: redis://redis:6379/0
-      BACKEND_CORS_ORIGINS: '["http://localhost:18080"]'
+      BACKEND_CORS_ORIGINS: '["http://localhost:5173"]'
       BACKEND_CORS_ALLOW_CREDENTIALS: "true"
     depends_on:
       mysql:
