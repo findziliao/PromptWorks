@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.security import (
@@ -61,11 +61,30 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> Token:
     user = db.scalar(select(User).where(User.username == form_data.username))
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="用户名或密码错误",
-        )
+
+    if user is None:
+        # 当系统还没有任何用户时，第一次登录的用户自动成为管理员。
+        total_users = db.scalar(select(func.count()).select_from(User))
+        if not total_users:
+            user = User(
+                username=form_data.username,
+                hashed_password=get_password_hash(form_data.password),
+                is_superuser=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户名或密码错误",
+            )
+    else:
+        if not verify_password(form_data.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户名或密码错误",
+            )
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

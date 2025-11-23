@@ -134,6 +134,11 @@
               {{ formatDate(row.updated_at) }}
             </template>
           </el-table-column>
+          <el-table-column :label="t('promptManagement.completedAt')" width="180">
+            <template #default="{ row }">
+              {{ formatDate(row.completed_at) }}
+            </template>
+          </el-table-column>
           <el-table-column :label="t('promptClassManagement.columns.actions')" width="140" fixed="right">
             <template #default="{ row }">
               <el-button
@@ -193,6 +198,10 @@
                 <div class="meta-item">
                   <span class="meta-label">{{ t('promptManagement.updatedAt') }}</span>
                   <span>{{ formatDate(prompt.updated_at) }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">{{ t('promptManagement.completedAt') }}</span>
+                  <span>{{ formatDate(prompt.completed_at) }}</span>
                 </div>
               </div>
               <div class="prompt-tags">
@@ -720,7 +729,6 @@ async function handleAiGenerate() {
       return
     }
     applyAiSuggestion(parsed)
-    aiDialogVisible.value = false
     ElMessage.success(t('promptManagement.aiHelper.applySuccess'))
   } catch (error) {
     ElMessage.error(extractErrorMessage(error, t('promptManagement.aiHelper.invokeFailed')))

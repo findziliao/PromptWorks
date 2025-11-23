@@ -78,6 +78,12 @@
           class="meta-alert"
         />
         <el-form label-width="80px" class="meta-form">
+          <el-form-item :label="t('promptDetail.info.dialog.authorLabel')">
+            <el-input
+              v-model="metaAuthor"
+              :placeholder="t('promptDetail.info.dialog.authorPlaceholder')"
+            />
+          </el-form-item>
           <el-form-item :label="t('promptDetail.info.dialog.classLabel')">
             <el-select
               v-model="selectedClassId"
@@ -413,6 +419,7 @@ const isMetaSaving = ref(false)
 const selectedClassId = ref<number | null>(null)
 const selectedTagIds = ref<number[]>([])
 const metaDialogVisible = ref(false)
+const metaAuthor = ref('')
 
 const collaborators = ref<PromptCollaborator[]>([])
 const shareError = ref<string | null>(null)
@@ -469,6 +476,7 @@ watch(
     selectedVersionId.value = value.current_version?.id ?? value.versions[0]?.id ?? null
     selectedClassId.value = value.prompt_class.id
     selectedTagIds.value = value.tags.map((tag) => tag.id)
+    metaAuthor.value = value.author ?? ''
     void fetchCollaborators()
   },
   { immediate: true }
@@ -641,7 +649,10 @@ const canSaveMeta = computed(() => {
   const tagsChanged =
     originalTags.length !== currentTags.length ||
     originalTags.some((value, index) => value !== currentTags[index])
-  return selectedClassId.value !== originalClassId || tagsChanged
+  const originalAuthor = prompt.author ?? ''
+  const currentAuthor = metaAuthor.value.trim()
+  const authorChanged = currentAuthor !== originalAuthor
+  return selectedClassId.value !== originalClassId || tagsChanged || authorChanged
 })
 
 function extractMetaError(error: unknown): string {
@@ -1009,10 +1020,12 @@ function resetMetaSelections() {
   if (!prompt) {
     selectedClassId.value = null
     selectedTagIds.value = []
+    metaAuthor.value = ''
     return
   }
   selectedClassId.value = prompt.prompt_class.id
   selectedTagIds.value = prompt.tags.map((tag) => tag.id)
+  metaAuthor.value = prompt.author ?? ''
 }
 
 function extractTestRunError(error: unknown): string {
@@ -1046,10 +1059,17 @@ async function handleSaveMeta() {
   }
   isMetaSaving.value = true
   try {
-    await updatePrompt(prompt.id, {
+    const payload: Record<string, unknown> = {
       class_id: selectedClassId.value,
       tag_ids: selectedTagIds.value
-    })
+    }
+    const originalAuthor = prompt.author ?? ''
+    const currentAuthor = metaAuthor.value.trim()
+    if (currentAuthor !== originalAuthor) {
+      payload.author = currentAuthor || null
+    }
+
+    await updatePrompt(prompt.id, payload)
     ElMessage.success(t('promptDetail.messages.updateSuccess'))
     await refreshDetail()
     await fetchMeta()

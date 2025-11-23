@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Sequence
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
@@ -153,6 +154,16 @@ def _resolve_prompt_tags(db: Session, tag_ids: list[int]) -> list[PromptTag]:
     return [id_to_tag[tag_id] for tag_id in unique_ids]
 
 
+COMPLETION_TAG_KEYWORDS = {"完成", "已完成", "done", "completed"}
+
+
+def _has_completion_tag(tags: Sequence[PromptTag]) -> bool:
+    if not tags:
+        return False
+    names = {tag.name.strip().lower() for tag in tags if tag.name}
+    return any(keyword in names for keyword in COMPLETION_TAG_KEYWORDS)
+
+
 @router.get("/", response_model=list[PromptRead])
 def list_prompts(
     *,
@@ -230,6 +241,11 @@ def create_prompt(
     elif created_new_prompt:
         prompt.tags = []
 
+    if _has_completion_tag(prompt.tags):
+        prompt.completed_at = datetime.now(timezone.utc)
+    else:
+        prompt.completed_at = None
+
     existing_version = db.scalar(
         select(PromptVersion).where(
             PromptVersion.prompt_id == prompt.id,
@@ -290,6 +306,8 @@ def update_prompt(
         require_edit=True,
     )
 
+    had_completion_tag = _has_completion_tag(prompt.tags)
+
     if payload.class_id is not None or (
         payload.class_name and payload.class_name.strip()
     ):
@@ -310,6 +328,12 @@ def update_prompt(
 
     if payload.tag_ids is not None:
         prompt.tags = _resolve_prompt_tags(db, payload.tag_ids)
+
+    has_completion_tag = _has_completion_tag(prompt.tags)
+    if has_completion_tag and not had_completion_tag:
+        prompt.completed_at = datetime.now(timezone.utc)
+    elif not has_completion_tag and had_completion_tag:
+        prompt.completed_at = None
 
     if payload.version is not None and payload.content is not None:
         exists = db.scalar(

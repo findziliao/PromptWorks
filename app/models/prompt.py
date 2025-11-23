@@ -158,6 +158,9 @@ class Prompt(Base):
         onupdate=func.now(),
         nullable=False,
     )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     prompt_class: Mapped[PromptClass] = relationship(
         "PromptClass", back_populates="prompts"

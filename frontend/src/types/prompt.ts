@@ -38,11 +38,12 @@ export interface Prompt {
   name: string
   description: string | null
   author: string | null
-   owner_id: number | null
+  owner_id: number | null
   prompt_class: PromptClass
   current_version: PromptVersion | null
   versions: PromptVersion[]
   tags: PromptTag[]
   created_at: string
   updated_at: string
+  completed_at: string | null
 }

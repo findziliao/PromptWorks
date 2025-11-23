@@ -94,3 +94,54 @@ def test_login_with_invalid_credentials_returns_400(
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     assert resp.status_code == 400
+
+
+def test_first_login_creates_initial_superuser(
+    client: TestClient, db_session: Session
+) -> None:
+    """当用户表为空时，第一次登录的用户会被创建为管理员。"""
+
+    # 确认数据库中当前没有用户
+    assert db_session.query(User).count() == 0
+
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": "first-admin", "password": "secret-123"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["token_type"] == "bearer"
+    assert body["access_token"]
+
+    user = db_session.query(User).filter_by(username="first-admin").first()
+    assert user is not None
+    assert user.is_superuser is True
+    assert user.is_active is True
+    assert user.hashed_password != "secret-123"
+
+
+def test_first_login_admin_creation_only_when_no_user_exists(
+    client: TestClient, db_session: Session
+) -> None:
+    """只有在系统中没有任何用户时才会触发首次登录创建管理员逻辑。"""
+
+    # 预先创建一个普通用户
+    existing = User(
+        username="existing-user",
+        hashed_password=get_password_hash("password-1"),
+        is_superuser=False,
+    )
+    db_session.add(existing)
+    db_session.commit()
+
+    # 再次使用一个不存在的用户名尝试登录，应返回 400 且不会创建新用户
+    resp = client.post(
+        "/api/v1/auth/login",
+        data={"username": "another-admin", "password": "secret-123"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    assert resp.status_code == 400
+    assert db_session.query(User).filter_by(username="another-admin").first() is None
