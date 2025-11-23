@@ -93,4 +93,32 @@ def update_user(
     return user
 
 
+@router.delete(
+    "/{user_id}",
+    status_code=status.HTTP_200_OK,
+    summary="删除用户，仅管理员",
+)
+def delete_user(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_superuser),
+    user_id: int,
+) -> None:
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在",
+        )
+
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="不能删除当前登录的管理员账号",
+        )
+
+    db.delete(user)
+    db.commit()
+
+
 __all__ = ["router"]

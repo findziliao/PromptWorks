@@ -36,3 +36,9 @@ export async function updateUser(
     body: JSON.stringify(payload)
   })
 }
+
+export async function deleteUser(userId: number): Promise<void> {
+  return request<void>(`/users/${userId}`, {
+    method: 'DELETE'
+  })
+}

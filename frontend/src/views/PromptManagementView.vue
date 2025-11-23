@@ -235,7 +235,7 @@
       <el-empty v-else :description="t('promptManagement.emptyDescription')" />
     </template>
 
-    <el-dialog v-model="createDialogVisible" :title="t('promptManagement.dialogTitle')" width="720px">
+    <el-dialog v-model="createDialogVisible" :title="t('promptManagement.dialogTitle')" width="900px">
       <el-alert
         v-if="!classOptions.length"
         :title="t('promptManagement.dialogAlert')"
@@ -243,59 +243,98 @@
         show-icon
         class="dialog-alert"
       />
-      <el-form :model="promptForm" label-width="100px" class="dialog-form">
-        <el-form-item :label="t('promptManagement.form.title')">
-          <el-input v-model="promptForm.name" :placeholder="t('promptManagement.form.titlePlaceholder')" />
-        </el-form-item>
-        <el-form-item :label="t('promptManagement.form.author')">
-          <el-input v-model="promptForm.author" :placeholder="t('promptManagement.form.authorPlaceholder')" />
-        </el-form-item>
-        <el-form-item :label="t('promptManagement.form.description')">
-          <el-input
-            v-model="promptForm.description"
-            type="textarea"
-            :autosize="{ minRows: 2, maxRows: 4 }"
-            :placeholder="t('promptManagement.form.descriptionPlaceholder')"
-          />
-        </el-form-item>
-        <el-form-item :label="t('promptManagement.form.class')">
-          <el-select v-model="promptForm.classId" :placeholder="t('promptManagement.form.classPlaceholder')">
-            <el-option
-              v-for="item in classOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
+      <div class="dialog-body">
+        <el-form :model="promptForm" label-width="100px" class="dialog-form">
+          <el-form-item :label="t('promptManagement.form.title')">
+            <el-input v-model="promptForm.name" :placeholder="t('promptManagement.form.titlePlaceholder')" />
+          </el-form-item>
+          <el-form-item :label="t('promptManagement.form.author')">
+            <el-input v-model="promptForm.author" :placeholder="t('promptManagement.form.authorPlaceholder')" />
+          </el-form-item>
+          <el-form-item :label="t('promptManagement.form.description')">
+            <el-input
+              v-model="promptForm.description"
+              type="textarea"
+              :autosize="{ minRows: 2, maxRows: 4 }"
+              :placeholder="t('promptManagement.form.descriptionPlaceholder')"
             />
-          </el-select>
-        </el-form-item>
-        <el-form-item :label="t('promptManagement.form.tags')">
-          <el-select
-            v-model="promptForm.tagIds"
-            multiple
-            collapse-tags
-            collapse-tags-tooltip
-            :placeholder="t('promptManagement.form.tagsPlaceholder')"
-          >
-            <el-option
-              v-for="tag in tagOptions"
-              :key="tag.id"
-              :label="tag.name"
-              :value="tag.id"
+          </el-form-item>
+          <el-form-item :label="t('promptManagement.form.class')">
+            <el-select v-model="promptForm.classId" :placeholder="t('promptManagement.form.classPlaceholder')">
+              <el-option
+                v-for="item in classOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="t('promptManagement.form.tags')">
+            <el-select
+              v-model="promptForm.tagIds"
+              multiple
+              collapse-tags
+              collapse-tags-tooltip
+              :placeholder="t('promptManagement.form.tagsPlaceholder')"
+            >
+              <el-option
+                v-for="tag in tagOptions"
+                :key="tag.id"
+                :label="tag.name"
+                :value="tag.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="t('promptManagement.form.version')">
+            <el-input v-model="promptForm.version" :placeholder="t('promptManagement.form.versionPlaceholder')" />
+          </el-form-item>
+          <el-form-item :label="t('promptManagement.form.content')">
+            <el-input
+              v-model="promptForm.content"
+              type="textarea"
+              :autosize="{ minRows: 6, maxRows: 12 }"
+              :placeholder="t('promptManagement.form.contentPlaceholder')"
             />
-          </el-select>
-        </el-form-item>
-        <el-form-item :label="t('promptManagement.form.version')">
-          <el-input v-model="promptForm.version" :placeholder="t('promptManagement.form.versionPlaceholder')" />
-        </el-form-item>
-        <el-form-item :label="t('promptManagement.form.content')">
-          <el-input
-            v-model="promptForm.content"
-            type="textarea"
-            :autosize="{ minRows: 6, maxRows: 12 }"
-            :placeholder="t('promptManagement.form.contentPlaceholder')"
-          />
-        </el-form-item>
-      </el-form>
+          </el-form-item>
+        </el-form>
+
+        <div class="ai-panel">
+          <h4 class="ai-panel__title">{{ t('promptManagement.aiHelper.panelTitle') }}</h4>
+          <p class="ai-panel__hint">
+            {{ t('promptManagement.aiHelper.description') }}
+          </p>
+          <el-form label-position="top" class="ai-dialog-form">
+            <el-form-item :label="t('promptManagement.aiHelper.modelLabel')">
+              <el-cascader
+                v-model="aiModelPath"
+                :options="aiModelOptions"
+                :props="aiCascaderProps"
+                :show-all-levels="false"
+                clearable
+                filterable
+                :placeholder="t('promptManagement.aiHelper.modelPlaceholder')"
+                :disabled="aiLoading"
+              />
+            </el-form-item>
+            <el-form-item :label="t('promptManagement.aiHelper.promptLabel')">
+              <el-input
+                v-model="aiDescription"
+                type="textarea"
+                :autosize="{ minRows: 5, maxRows: 8 }"
+                :placeholder="t('promptManagement.aiHelper.promptPlaceholder')"
+              />
+            </el-form-item>
+            <div class="ai-panel__actions">
+              <el-button @click="handleAiReset" :disabled="aiLoading">
+                {{ t('common.cancel') }}
+              </el-button>
+              <el-button type="primary" :loading="aiLoading" @click="handleAiGenerate">
+                {{ t('promptManagement.aiHelper.generate') }}
+              </el-button>
+            </div>
+          </el-form>
+        </div>
+      </div>
       <template #footer>
         <el-button @click="createDialogVisible = false">{{ t('promptManagement.footer.cancel') }}</el-button>
         <el-button type="primary" :loading="isSubmitting" @click="handleCreatePrompt">
@@ -314,6 +353,9 @@ import { ElMessage } from 'element-plus'
 import { listPrompts, createPrompt, deletePrompt, type HttpError } from '../api/prompt'
 import { listPromptClasses, type PromptClassStats } from '../api/promptClass'
 import { listPromptTags, type PromptTagStats } from '../api/promptTag'
+import { listLLMProviders } from '../api/llmProvider'
+import { invokeQuickTest, type QuickTestStreamPayload } from '../api/quickTest'
+import type { ChatMessagePayload, LLMProvider } from '../types/llm'
 import type { Prompt } from '../types/prompt'
 import { useI18n } from 'vue-i18n'
 
@@ -346,6 +388,16 @@ const searchKeyword = ref('')
 const selectedTagIds = ref<number[]>([])
 const sortKey = ref<SortKey>('default')
 const viewMode = ref<'list' | 'card'>('list')
+
+const aiDescription = ref('')
+const aiLoading = ref(false)
+const aiProviders = ref<LLMProvider[]>([])
+const aiModelOptions = ref<{ value: number | string; label: string; children?: { value: number | string; label: string }[] }[]>([])
+const aiModelPath = ref<(number | string)[]>([])
+const aiCascaderProps = reactive({
+  expandTrigger: 'hover' as const,
+  emitPath: true
+})
 
 const classOptions = computed(() => {
   return promptClasses.value
@@ -467,6 +519,28 @@ function openCreateDialog() {
   resetPromptForm()
   createDialogVisible.value = true
 }
+async function fetchAiProviders() {
+  try {
+    const providers = await listLLMProviders()
+    aiProviders.value = providers.filter((item) => item.models && item.models.length > 0)
+    aiModelOptions.value = aiProviders.value.map((provider) => ({
+      value: provider.id,
+      label: provider.provider_name,
+      children: provider.models.map((model) => ({
+        value: model.name,
+        label: model.name
+      }))
+    }))
+    if (!aiModelPath.value.length && aiProviders.value.length && aiProviders.value[0].models.length) {
+      const firstProvider = aiProviders.value[0]
+      const firstModel = firstProvider.models[0]
+      aiModelPath.value = [firstProvider.id, firstModel.name]
+    }
+  } catch (error) {
+    void error
+    ElMessage.error(t('promptManagement.aiHelper.loadProviderFailed'))
+  }
+}
 
 function toggleViewMode() {
   viewMode.value = viewMode.value === 'list' ? 'card' : 'list'
@@ -517,6 +591,146 @@ function handleCreatePrompt() {
     .finally(() => {
       isSubmitting.value = false
     })
+}
+
+function resolveAiModelSelection() {
+  if (aiModelPath.value.length !== 2) {
+    return null
+  }
+  const [providerIdRaw, modelNameRaw] = aiModelPath.value
+  const providerId = Number(providerIdRaw)
+  if (Number.isNaN(providerId)) return null
+  const provider = aiProviders.value.find((item) => item.id === providerId)
+  if (!provider) return null
+  const model = provider.models.find((item) => item.name === String(modelNameRaw))
+  if (!model) return null
+  return { provider, model }
+}
+
+function applyAiSuggestion(raw: unknown) {
+  if (!raw || typeof raw !== 'object') return
+  const suggestion = raw as Record<string, unknown>
+  const title = suggestion.title
+  const description = suggestion.description
+  const content = suggestion.content
+  const author = suggestion.author
+  const version = suggestion.version
+  const tags = suggestion.tags
+
+  if (typeof title === 'string' && title.trim()) {
+    promptForm.name = title.trim()
+  }
+  if (typeof description === 'string' && description.trim()) {
+    promptForm.description = description.trim()
+  }
+  if (typeof content === 'string' && content.trim()) {
+    promptForm.content = content
+  }
+  if (typeof author === 'string' && author.trim()) {
+    promptForm.author = author.trim()
+  }
+  if (typeof version === 'string' && version.trim()) {
+    promptForm.version = version.trim()
+  }
+
+  if (Array.isArray(tags) && tags.length && tagOptions.value.length) {
+    const nameToId = new Map<string, number>()
+    tagOptions.value.forEach((tag) => {
+      nameToId.set(tag.name.toLowerCase(), tag.id)
+    })
+    const selected: number[] = []
+    for (const item of tags) {
+      if (typeof item !== 'string') continue
+      const id = nameToId.get(item.toLowerCase())
+      if (id != null && !selected.includes(id)) {
+        selected.push(id)
+      }
+    }
+    if (selected.length) {
+      promptForm.tagIds = selected
+    }
+  }
+}
+
+async function handleAiGenerate() {
+  const selection = resolveAiModelSelection()
+  if (!selection) {
+    ElMessage.warning(t('promptManagement.aiHelper.noProviderShort'))
+    return
+  }
+  const description = aiDescription.value.trim()
+  if (!description) {
+    ElMessage.warning(t('promptManagement.aiHelper.descriptionRequired'))
+    return
+  }
+
+  const systemPrompt =
+    '你是 PromptWorks 平台的提示词设计助手。' +
+    '用户会用中文描述一个 Prompt 的用途、目标用户、输入输出等信息。' +
+    '请只输出一个 JSON 对象，不要包含任何额外文字或解释。' +
+    'JSON 字段为: title(标题字符串), description(简要描述字符串), content(Prompt 具体内容字符串), ' +
+    'author(作者或责任人字符串，可为空字符串), version(版本号字符串，建议形如 v1 或 v1.0), ' +
+    'tags(字符串数组，每个是一个标签名称)。'
+
+  const messagesPayload: ChatMessagePayload[] = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: description }
+  ]
+
+  const payload: QuickTestStreamPayload = {
+    providerId: selection.provider.id,
+    modelId: selection.model.id,
+    modelName: selection.model.name,
+    messages: messagesPayload,
+    temperature: 0.7,
+    parameters: {},
+    promptId: null,
+    promptVersionId: null,
+    persistUsage: false
+  }
+
+  aiLoading.value = true
+  try {
+    const response = (await invokeQuickTest(payload)) as any
+    const choices = Array.isArray(response?.choices) ? response.choices : []
+    let combined = ''
+    for (const choice of choices) {
+      if (!choice || typeof choice !== 'object') continue
+      const message = (choice as any).message
+      if (message && typeof message.content === 'string') {
+        combined += message.content
+        continue
+      }
+      const text = (choice as any).text
+      if (typeof text === 'string') {
+        combined += text
+      }
+    }
+    const jsonText = combined.trim()
+    if (!jsonText) {
+      ElMessage.error(t('promptManagement.aiHelper.emptyResponse'))
+      return
+    }
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(jsonText)
+    } catch (error) {
+      void error
+      ElMessage.error(t('promptManagement.aiHelper.parseFailed'))
+      return
+    }
+    applyAiSuggestion(parsed)
+    aiDialogVisible.value = false
+    ElMessage.success(t('promptManagement.aiHelper.applySuccess'))
+  } catch (error) {
+    ElMessage.error(extractErrorMessage(error, t('promptManagement.aiHelper.invokeFailed')))
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+function handleAiReset() {
+  aiDescription.value = ''
 }
 
 function goDetail(id: number) {
@@ -599,7 +813,7 @@ async function bootstrap() {
   isLoading.value = true
   promptError.value = null
   collectionError.value = null
-  await Promise.all([fetchPrompts(), fetchCollections()])
+  await Promise.all([fetchPrompts(), fetchCollections(), fetchAiProviders()])
   isLoading.value = false
 }
 
@@ -848,5 +1062,40 @@ onMounted(() => {
 
 .dialog-alert {
   margin-bottom: 12px;
+}
+.dialog-body {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.ai-panel {
+  border-left: 1px solid var(--el-border-color-lighter);
+  padding-left: 16px;
+}
+
+.ai-panel__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.ai-panel__hint {
+  font-size: 12px;
+  color: var(--text-weak-color);
+  margin: 0 0 12px;
+}
+
+.ai-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>

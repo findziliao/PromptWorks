@@ -139,3 +139,30 @@ def test_admin_cannot_remove_own_superuser_flag(
         json={"is_active": False},
     )
     assert resp_active.status_code == 400
+
+
+def test_admin_can_delete_user(client: TestClient, db_session: Session) -> None:
+    """管理员可以删除其他用户。"""
+
+    admin = _create_user(db_session, "admin-delete", is_superuser=True)
+    user = _create_user(db_session, "user-to-delete")
+
+    headers = _auth_headers_for(admin)
+
+    resp = client.delete(f"/api/v1/users/{user.id}", headers=headers)
+    assert resp.status_code == 200
+
+    list_resp = client.get("/api/v1/users/", headers=headers)
+    assert list_resp.status_code == 200
+    usernames = {item["username"] for item in list_resp.json()}
+    assert "user-to-delete" not in usernames
+
+
+def test_admin_cannot_delete_self(client: TestClient, db_session: Session) -> None:
+    """管理员不能删除自己的账号。"""
+
+    admin = _create_user(db_session, "self-delete", is_superuser=True)
+    headers = _auth_headers_for(admin)
+
+    resp = client.delete(f"/api/v1/users/{admin.id}", headers=headers)
+    assert resp.status_code == 400

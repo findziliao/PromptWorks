@@ -81,6 +81,37 @@
             {{ formatDateTime(row.updated_at) }}
           </template>
         </el-table-column>
+        <el-table-column :label="t('userManagement.columns.actions')" width="200">
+          <template #default="{ row }">
+            <el-button
+              type="primary"
+              text
+              size="small"
+              @click="openEditDialog(row)"
+            >
+              {{ t('userManagement.actions.edit') }}
+            </el-button>
+            <el-popconfirm
+              :title="t('userManagement.messages.deleteConfirm', { username: row.username })"
+              :confirm-button-text="t('userManagement.actions.deleteConfirm')"
+              :cancel-button-text="t('common.cancel')"
+              icon=""
+              @confirm="() => handleDeleteUser(row)"
+            >
+              <template #reference>
+                <el-button
+                  type="danger"
+                  text
+                  size="small"
+                  :disabled="row.id === currentUser?.id"
+                  :loading="deletingId === row.id"
+                >
+                  {{ t('userManagement.actions.delete') }}
+                </el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
       </el-table>
 
       <el-dialog
@@ -121,6 +152,54 @@
           </el-button>
         </template>
       </el-dialog>
+
+      <el-dialog
+        v-model="editDialogVisible"
+        :title="t('userManagement.editDialogTitle')"
+        width="420px"
+      >
+        <el-form label-position="top" class="create-form">
+          <el-form-item :label="t('userManagement.columns.username')">
+            <el-input :model-value="editingUser?.username || ''" disabled />
+          </el-form-item>
+          <el-form-item :label="t('userManagement.columns.active')">
+            <el-switch
+              v-model="editForm.isActive"
+              :disabled="editingUser?.id === currentUser?.id"
+            />
+          </el-form-item>
+          <el-form-item :label="t('userManagement.columns.admin')">
+            <el-switch
+              v-model="editForm.isSuperuser"
+              :disabled="editingUser?.id === currentUser?.id"
+            />
+          </el-form-item>
+          <el-form-item :label="t('userManagement.editForm.password')">
+            <el-input
+              v-model="editForm.password"
+              :placeholder="t('userManagement.editForm.passwordPlaceholder')"
+              type="password"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item :label="t('userManagement.editForm.confirmPassword')">
+            <el-input
+              v-model="editForm.confirmPassword"
+              :placeholder="t('userManagement.editForm.confirmPasswordPlaceholder')"
+              type="password"
+              show-password
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="editDialogVisible = false" :disabled="editLoading">
+            {{ t('common.cancel') }}
+          </el-button>
+          <el-button type="primary" :loading="editLoading" @click="handleUpdateUser">
+            {{ t('userManagement.editConfirm') }}
+          </el-button>
+        </template>
+      </el-dialog>
     </template>
   </div>
 </template>
@@ -130,7 +209,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { listUsers, updateUser } from '../api/user'
+import { listUsers, updateUser, deleteUser } from '../api/user'
 import { signup as signupApi } from '../api/authApi'
 import type { User } from '../types/user'
 import { useAuth } from '../composables/useAuth'
@@ -142,6 +221,7 @@ const { currentUser } = useAuth()
 const users = ref<User[]>([])
 const loading = ref(false)
 const savingId = ref<number | null>(null)
+const deletingId = ref<number | null>(null)
 const searchKeyword = ref('')
 
 const createDialogVisible = ref(false)
@@ -150,6 +230,16 @@ const createForm = reactive({
   username: '',
   password: '',
   confirmPassword: ''
+})
+
+const editDialogVisible = ref(false)
+const editLoading = ref(false)
+const editingUser = ref<User | null>(null)
+const editForm = reactive({
+  password: '',
+  confirmPassword: '',
+  isActive: true,
+  isSuperuser: false
 })
 
 const isAdmin = computed(() => currentUser.value?.is_superuser === true)
@@ -212,6 +302,15 @@ function openCreateDialog() {
   createForm.password = ''
   createForm.confirmPassword = ''
   createDialogVisible.value = true
+}
+
+function openEditDialog(user: User) {
+  editingUser.value = user
+  editForm.password = ''
+  editForm.confirmPassword = ''
+  editForm.isActive = user.is_active
+  editForm.isSuperuser = user.is_superuser
+  editDialogVisible.value = true
 }
 
 async function handleToggleAdmin(target: User, value: boolean) {
@@ -277,6 +376,62 @@ async function handleCreateUser() {
     ElMessage.error(extractErrorMessage(error))
   } finally {
     createLoading.value = false
+  }
+}
+
+async function handleUpdateUser() {
+  if (!isAdmin.value || !editingUser.value) return
+
+  const payload: Record<string, unknown> = {}
+
+  if (editForm.password || editForm.confirmPassword) {
+    if (!editForm.password || editForm.password.length < 6) {
+      ElMessage.warning(t('userManagement.messages.passwordInvalid'))
+      return
+    }
+    if (editForm.password !== editForm.confirmPassword) {
+      ElMessage.warning(t('userManagement.messages.confirmPasswordMismatch'))
+      return
+    }
+    payload.password = editForm.password
+  }
+
+  if (editForm.isActive !== editingUser.value.is_active) {
+    payload.is_active = editForm.isActive
+  }
+  if (editForm.isSuperuser !== editingUser.value.is_superuser) {
+    payload.is_superuser = editForm.isSuperuser
+  }
+
+  editLoading.value = true
+  try {
+    const updated = await updateUser(editingUser.value.id, payload)
+    const index = users.value.findIndex((item) => item.id === updated.id)
+    if (index !== -1) {
+      users.value[index] = updated
+    }
+    ElMessage.success(t('userManagement.messages.updateSuccess'))
+    editDialogVisible.value = false
+  } catch (error) {
+    ElMessage.error(extractErrorMessage(error))
+  } finally {
+    editLoading.value = false
+  }
+}
+
+async function handleDeleteUser(target: User) {
+  if (!isAdmin.value) return
+  if (target.id === currentUser.value?.id) return
+
+  deletingId.value = target.id
+  try {
+    await deleteUser(target.id)
+    users.value = users.value.filter((item) => item.id !== target.id)
+    ElMessage.success(t('userManagement.messages.deleteSuccess'))
+  } catch (error) {
+    ElMessage.error(extractErrorMessage(error))
+  } finally {
+    deletingId.value = null
   }
 }
 

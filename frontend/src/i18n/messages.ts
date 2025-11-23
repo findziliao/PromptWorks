@@ -95,6 +95,25 @@ export const messages = {
       emptyDescription: '暂无 Prompt 数据，请点击右上角新建',
       dialogTitle: '新建 Prompt',
       dialogAlert: '当前还没有可用分类，请先在“分类管理”中新增分类。',
+      aiHelper: {
+        panelTitle: 'AI 自动生成',
+        description: '可以通过 AI 自动生成标题、描述与内容，生成后可继续手动调整。',
+        modelLabel: '选择模型',
+        modelPlaceholder: '请选择要使用的模型',
+        promptLabel: '请用自然语言描述这个 Prompt 的用途',
+        promptPlaceholder: '例如：给客服团队使用的对话模板，用于总结用户问题并生成后续跟进建议……',
+        noProvider: '当前尚未配置可用的 LLM 提供方和模型，请先在「LLMs 管理」中添加。',
+        noModelWarning: '暂未找到包含模型的 LLM 提供方，请先在「LLMs 管理」中添加模型。',
+        loadProviderFailed: '加载 LLM 提供方失败，稍后重试或检查网络配置。',
+        noProviderShort: '暂未找到可用的模型，请先完成 LLM 配置。',
+        descriptionRequired: '请先输入要生成的 Prompt 功能描述。',
+        generate: '生成并填充',
+        reset: '清空描述',
+        emptyResponse: 'AI 返回内容为空，暂时无法生成草稿。',
+        parseFailed: 'AI 返回的内容不是有效的 JSON，无法自动填充，请稍后重试。',
+        applySuccess: '已根据 AI 建议填充表单，请检查后再提交。',
+        invokeFailed: '调用 AI 生成提示词失败，请稍后重试。'
+      },
       form: {
         title: '标题',
         titlePlaceholder: '请输入 Prompt 标题',
@@ -337,7 +356,13 @@ export const messages = {
         active: '启用',
         admin: '管理员',
         createdAt: '创建时间',
-        updatedAt: '更新时间'
+        updatedAt: '更新时间',
+        actions: '操作'
+      },
+      actions: {
+        edit: '编辑',
+        delete: '删除',
+        deleteConfirm: '确认删除'
       },
       roles: {
         admin: '管理员',
@@ -349,7 +374,18 @@ export const messages = {
         usernameRequired: '请输入用户名',
         passwordInvalid: '请输入至少 6 位的密码',
         confirmPasswordMismatch: '两次输入的密码不一致',
-        createSuccess: '新用户创建成功'
+        createSuccess: '新用户创建成功',
+        deleteConfirm: '确认删除用户「{username}」？此操作不可恢复。',
+        deleteSuccess: '用户已删除',
+        deleteFailed: '删除用户失败，请稍后重试'
+      },
+      editDialogTitle: '编辑用户',
+      editConfirm: '保存',
+      editForm: {
+        password: '新密码',
+        passwordPlaceholder: '如需重置密码，请输入新密码（至少 6 位）',
+        confirmPassword: '确认新密码',
+        confirmPasswordPlaceholder: '请再次输入新密码'
       }
     },
     testJobManagement: {
@@ -1246,6 +1282,25 @@ export const messages = {
       emptyDescription: 'No prompt data yet. Click “New Prompt” to create.',
       dialogTitle: 'New Prompt',
       dialogAlert: 'No class available. Please create one under “Class Management”.',
+      aiHelper: {
+        panelTitle: 'AI Assist',
+        description: 'Use AI to draft the title, description, and content, then refine manually as needed.',
+        modelLabel: 'Model',
+        modelPlaceholder: 'Select a model to use',
+        promptLabel: 'Describe the purpose and behavior of this prompt',
+        promptPlaceholder: 'For example: a prompt for the support team to summarize user issues and propose follow-up suggestions…',
+        noProvider: 'No LLM provider with models is configured. Please add one under “LLM Management” first.',
+        noModelWarning: 'No provider with models found. Please add models under “LLM Management” first.',
+        loadProviderFailed: 'Failed to load LLM providers. Please try again later.',
+        noProviderShort: 'No usable model found. Please complete LLM configuration first.',
+        descriptionRequired: 'Please enter a description of the prompt you want to generate.',
+        generate: 'Generate and Apply',
+        reset: 'Clear',
+        emptyResponse: 'AI returned empty content. Unable to generate a draft.',
+        parseFailed: 'AI response is not valid JSON. Cannot auto-fill fields.',
+        applySuccess: 'Form has been filled based on AI suggestion. Please review before submitting.',
+        invokeFailed: 'Failed to call AI to generate prompt. Please try again later.'
+      },
       form: {
         title: 'Title',
         titlePlaceholder: 'Enter prompt title',
@@ -1488,7 +1543,13 @@ export const messages = {
         active: 'Active',
         admin: 'Admin',
         createdAt: 'Created At',
-        updatedAt: 'Updated At'
+        updatedAt: 'Updated At',
+        actions: 'Actions'
+      },
+      actions: {
+        edit: 'Edit',
+        delete: 'Delete',
+        deleteConfirm: 'Delete'
       },
       roles: {
         admin: 'Admin',
@@ -1500,7 +1561,18 @@ export const messages = {
         usernameRequired: 'Please enter a username.',
         passwordInvalid: 'Please enter a password of at least 6 characters.',
         confirmPasswordMismatch: 'The two passwords do not match.',
-        createSuccess: 'User created successfully.'
+        createSuccess: 'User created successfully.',
+        deleteConfirm: 'Delete user “{username}”? This action cannot be undone.',
+        deleteSuccess: 'User deleted successfully.',
+        deleteFailed: 'Failed to delete user. Please try again later.'
+      },
+      editDialogTitle: 'Edit User',
+      editConfirm: 'Save',
+      editForm: {
+        password: 'New Password',
+        passwordPlaceholder: 'Enter a new password (min 6 characters) to reset.',
+        confirmPassword: 'Confirm New Password',
+        confirmPasswordPlaceholder: 'Re-enter the new password'
       }
     },
     testJobManagement: {
