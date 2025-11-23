@@ -5,7 +5,7 @@ import random
 import statistics
 import time
 from collections.abc import Callable, Mapping, Sequence
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -85,7 +85,7 @@ def execute_prompt_test_experiment(
     context_template = unit.variables or {}
 
     experiment.status = PromptTestExperimentStatus.RUNNING
-    experiment.started_at = datetime.now(UTC)
+    experiment.started_at = datetime.now(timezone.utc)
     experiment.error = None
     db.flush()
 
@@ -176,7 +176,7 @@ def execute_prompt_test_experiment(
     else:
         experiment.status = PromptTestExperimentStatus.COMPLETED
         experiment.error = f"{failed_runs} 次调用失败" if failed_runs else None
-    experiment.finished_at = datetime.now(UTC)
+    experiment.finished_at = datetime.now(timezone.utc)
     db.flush()
     return experiment
 

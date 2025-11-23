@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import func, select
@@ -110,7 +110,7 @@ def test_prompt_test_task_execution_succeeds(db_session, monkeypatch):
         if progress_callback:
             progress_callback(1)
         experiment.status = PromptTestExperimentStatus.COMPLETED
-        experiment.finished_at = datetime.now(UTC)
+        experiment.finished_at = datetime.now(timezone.utc)
         session.flush()
 
     monkeypatch.setattr(
@@ -164,7 +164,7 @@ def test_prompt_test_task_progress_tracks_total_runs(
             for _ in range(expected_total):
                 progress_callback(1)
         experiment.status = PromptTestExperimentStatus.COMPLETED
-        experiment.finished_at = datetime.now(UTC)
+        experiment.finished_at = datetime.now(timezone.utc)
         session.flush()
 
     monkeypatch.setattr(

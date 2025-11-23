@@ -4,7 +4,7 @@ import logging
 import math
 import threading
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from queue import Empty, Queue
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -286,7 +286,7 @@ class PromptTestTaskQueue:
                     session.refresh(experiment)
                     experiment.status = PromptTestExperimentStatus.FAILED
                     experiment.error = str(exc)
-                    experiment.finished_at = datetime.now(UTC)
+                    experiment.finished_at = datetime.now(timezone.utc)
                     task.status = PromptTestTaskStatus.FAILED
                     self._update_task_last_error(task, str(exc))
                     progress_tracker.finish(force=True)
@@ -302,7 +302,7 @@ class PromptTestTaskQueue:
                     session.refresh(experiment)
                     experiment.status = PromptTestExperimentStatus.FAILED
                     experiment.error = "执行测试任务失败"
-                    experiment.finished_at = datetime.now(UTC)
+                    experiment.finished_at = datetime.now(timezone.utc)
                     task.status = PromptTestTaskStatus.FAILED
                     self._update_task_last_error(task, "执行测试任务失败")
                     progress_tracker.finish(force=True)

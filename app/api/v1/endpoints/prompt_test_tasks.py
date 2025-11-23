@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Sequence
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -281,7 +281,7 @@ def create_experiment_for_unit(
         except PromptTestExecutionError as exc:
             experiment.status = PromptTestExperimentStatus.FAILED
             experiment.error = str(exc)
-            experiment.finished_at = datetime.now(UTC)
+            experiment.finished_at = datetime.now(timezone.utc)
             db.flush()
 
     db.commit()
@@ -345,7 +345,7 @@ def execute_existing_experiment(
     except PromptTestExecutionError as exc:
         experiment.status = PromptTestExperimentStatus.FAILED
         experiment.error = str(exc)
-        experiment.finished_at = datetime.now(UTC)
+        experiment.finished_at = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(experiment)
